@@ -1,0 +1,18 @@
+__pycache__/
+*.py[cod]
+.venv/
+*.env
+!.env.template
+*.db
+*.sqlite
+
+# License signing keys (NEVER commit!)
+keys/
+*.pem
+
+node_modules/
+frontend/build/
+frontend/.env.local
+
+.DS_Store
+Thumbs.db
