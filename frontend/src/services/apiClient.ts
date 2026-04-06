@@ -19,9 +19,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   const response = await fetch(`${BASE_URL}${path}`, { ...options, headers });
 
-  if (response.status === 401) {
+  // In standalone mode (no token), don't treat 401 as session expiry
+  if (response.status === 401 && token) {
     authGuard.logout();
-    throw new ApiError(401, 'Session expired. Redirecting to Portal...');
+    throw new ApiError(401, 'Session expired');
   }
 
   if (!response.ok) {

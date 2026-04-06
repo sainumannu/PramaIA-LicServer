@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 from backend.db.database import engine
 from backend.db.init_db import init_database
-from backend.routers import example_router, settings_router, license_router, customer_router, license_file_router
+from backend.routers import example_router, settings_router, license_router, customer_router, license_file_router, config_router
 
 load_dotenv()
 
@@ -50,6 +50,7 @@ app.include_router(settings_router.router)
 app.include_router(license_router.router)
 app.include_router(customer_router.router)
 app.include_router(license_file_router.router)
+app.include_router(config_router.router)
 
 
 @app.get("/api/health")

@@ -6,11 +6,11 @@ from typing import Optional
 
 security = HTTPBearer(auto_error=False)
 
-PRAMAIA_JWT_SECRET = os.getenv("PRAMAIA_JWT_SECRET")
-if not PRAMAIA_JWT_SECRET:
-    raise ValueError("PRAMAIA_JWT_SECRET must be set in .env — same value as PramaIA Portal")
-
+PRAMAIA_JWT_SECRET = os.getenv("PRAMAIA_JWT_SECRET", "standalone-mode")
 PORTAL_ISSUER = "pramaia-portal"
+
+# Modalità standalone: se True, permette accesso senza autenticazione Portal
+STANDALONE_MODE = os.getenv("STANDALONE_MODE", "true").lower() in ("true", "1", "yes")
 
 
 class TokenPayload:
@@ -26,6 +26,20 @@ class TokenPayload:
         self.app_admin_for: list[str] = data.get("app_admin_for", [])
         self.is_admin: bool = "admin" in self.roles
         self.raw = data
+
+
+# Utente admin di default per modalità standalone
+DEFAULT_ADMIN_USER = TokenPayload({
+    "sub": "local-admin",
+    "email": "admin@localhost",
+    "display_name": "Admin Locale",
+    "roles": ["admin"],
+    "apps": ["pramaia-licserver"],
+    "tenant_id": "default",
+    "tenants": ["default"],
+    "tenant_role": "global_admin",
+    "app_admin_for": ["pramaia-licserver"],
+})
 
 
 def decode_portal_token(token: str) -> TokenPayload:
@@ -53,8 +67,12 @@ def decode_portal_token(token: str) -> TokenPayload:
 def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
 ) -> TokenPayload:
-    """Dipendenza FastAPI: utente autenticato obbligatorio."""
+    """Dipendenza FastAPI: utente autenticato obbligatorio.
+    In modalità standalone, restituisce un utente admin di default.
+    """
     if not credentials:
+        if STANDALONE_MODE:
+            return DEFAULT_ADMIN_USER
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication required. Please login via PramaIA Portal.",

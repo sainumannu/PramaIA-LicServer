@@ -113,15 +113,18 @@ const STATUS_COLORS: Record<string, 'success' | 'warning' | 'error' | 'info' | '
   suspended: 'warning',
 };
 
-const MODULES_OPTIONS = ['albo', 'protocollo', 'notifiche', 'anagrafe', 'contabilita', 'tributi'];
+// Type for apps loaded from backend
+interface AppConfig {
+  id: string;
+  name: string;
+  description?: string;
+  modules: string[];
+}
 
-// Available apps for multi-app licensing
-const AVAILABLE_APPS = [
-  { id: 'pramaia-mind', name: 'PramaIA Mind', description: 'AI Assistant' },
-  { id: 'pramaia-albo', name: 'PramaIA Albo', description: 'Albo Pretorio' },
-  { id: 'pramaia-protocollo', name: 'PramaIA Protocollo', description: 'Protocollo Informatico' },
-  { id: 'pramaia-notifiche', name: 'PramaIA Notifiche', description: 'Gestione Notifiche' },
-];
+interface AppsConfigResponse {
+  apps: AppConfig[];
+  source: string;
+}
 
 const LicensesPage: React.FC = () => {
   const user = authGuard.getCurrentUser();
@@ -173,6 +176,36 @@ const LicensesPage: React.FC = () => {
   
   // Tab state
   const [activeTab, setActiveTab] = useState(0);
+  
+  // Apps config (loaded from backend)
+  const [availableApps, setAvailableApps] = useState<AppConfig[]>([]);
+  const [modulesOptions, setModulesOptions] = useState<string[]>([]);
+  const [appsLoading, setAppsLoading] = useState(true);
+
+  // Load apps configuration from backend
+  const loadAppsConfig = useCallback(async () => {
+    setAppsLoading(true);
+    try {
+      const data = await apiClient.get<AppsConfigResponse>('/api/config/apps');
+      setAvailableApps(data.apps);
+      
+      // Collect all unique modules from all apps
+      const allModules = new Set<string>();
+      data.apps.forEach(app => {
+        app.modules.forEach(m => allModules.add(m));
+      });
+      setModulesOptions(Array.from(allModules).sort());
+    } catch (err) {
+      console.error('Failed to load apps config:', err);
+      // Fallback
+      setAvailableApps([
+        { id: 'pramaia-mind', name: 'PramaIA Mind', description: 'AI Assistant', modules: ['chat', 'documents'] },
+      ]);
+      setModulesOptions(['chat', 'documents', 'analysis']);
+    } finally {
+      setAppsLoading(false);
+    }
+  }, []);
 
   // Load licenses
   const loadLicenses = useCallback(async () => {
@@ -218,7 +251,8 @@ const LicensesPage: React.FC = () => {
 
   useEffect(() => {
     loadLicenses();
-  }, [loadLicenses]);
+    loadAppsConfig();
+  }, [loadLicenses, loadAppsConfig]);
 
   useEffect(() => {
     if (createDialogOpen) loadCustomers();
@@ -232,11 +266,6 @@ const LicensesPage: React.FC = () => {
           name: newLicense.customer_name,
           vat_or_cf: newLicense.customer_vat,
         },
-        entitlements: {
-          modules: newLicense.modules,
-          max_users: newLicense.max_users,
-          max_instances: newLicense.max_instances,
-        },
         environment: {
           deployment_type: newLicense.deployment_type,
         },
@@ -246,10 +275,30 @@ const LicensesPage: React.FC = () => {
         },
       };
       
-      // Add multi-app entitlements if enabled
+      // Add multi-app entitlements if enabled, otherwise use legacy entitlements
       if (useMultiApp && Object.keys(appsEntitlements).length > 0) {
         payload.apps_entitlements = appsEntitlements;
         payload.global_limits = globalLimits;
+        // Legacy entitlements: calcola totale dagli app entitlements
+        let totalUsers = 0;
+        let totalInstances = 0;
+        Object.values(appsEntitlements).forEach((ent: any) => {
+          if (ent.users) {
+            totalUsers += (ent.users.admin || 0) + (ent.users.standard || 0) + (ent.users.viewer || 0);
+          }
+          totalInstances += ent.max_instances || 1;
+        });
+        payload.entitlements = {
+          modules: [],
+          max_users: totalUsers || 1,
+          max_instances: totalInstances || 1,
+        };
+      } else {
+        payload.entitlements = {
+          modules: newLicense.modules,
+          max_users: newLicense.max_users,
+          max_instances: newLicense.max_instances,
+        };
       }
       
       await apiClient.post('/api/licenses/issue-license', payload);
@@ -326,6 +375,20 @@ const LicensesPage: React.FC = () => {
         `${licenseId}.lic.json`
       );
       setSuccess(`File licenza ${licenseId} scaricato`);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  const handleDeleteLicense = async (licenseId: string) => {
+    if (!window.confirm(`Sei sicuro di voler eliminare definitivamente la licenza ${licenseId}? Questa operazione è irreversibile.`)) {
+      return;
+    }
+    
+    try {
+      await apiClient.delete(`/api/licenses/${licenseId}`);
+      setSuccess(`Licenza ${licenseId} eliminata`);
+      loadLicenses();
     } catch (err: any) {
       setError(err.message);
     }
@@ -530,6 +593,17 @@ const LicensesPage: React.FC = () => {
                             <DownloadIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
+                        {isAdmin && (
+                          <Tooltip title="Elimina licenza">
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => handleDeleteLicense(license.license_id)}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
@@ -671,54 +745,59 @@ const LicensesPage: React.FC = () => {
               />
             </Grid>
             
-            {/* Entitlements */}
-            <Grid item xs={12}>
-              <Typography variant="subtitle2" sx={{ mb: 1, mt: 2 }}>Moduli e Limiti</Typography>
-            </Grid>
-            <Grid item xs={12}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Moduli Abilitati</InputLabel>
-                <Select
-                  multiple
-                  label="Moduli Abilitati"
-                  value={newLicense.modules}
-                  onChange={(e) => setNewLicense({ ...newLicense, modules: e.target.value as string[] })}
-                  renderValue={(selected) => (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                      {(selected as string[]).map((value) => (
-                        <Chip key={value} label={value} size="small" />
+            {/* Entitlements - solo se NON in modalità Multi-App */}
+            {!useMultiApp && (
+              <>
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" sx={{ mb: 1, mt: 2 }}>Moduli e Limiti</Typography>
+                </Grid>
+                <Grid item xs={12}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Moduli Abilitati</InputLabel>
+                    <Select
+                      multiple
+                      label="Moduli Abilitati"
+                      value={newLicense.modules}
+                      onChange={(e) => setNewLicense({ ...newLicense, modules: e.target.value as string[] })}
+                      renderValue={(selected) => (
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                          {(selected as string[]).map((value) => (
+                            <Chip key={value} label={value} size="small" />
+                          ))}
+                        </Box>
+                      )}
+                    >
+                      {modulesOptions.map((mod) => (
+                        <MenuItem key={mod} value={mod}>{mod}</MenuItem>
                       ))}
-                    </Box>
-                  )}
-                >
-                  {MODULES_OPTIONS.map((mod) => (
-                    <MenuItem key={mod} value={mod}>{mod}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={6} md={3}>
-              <TextField
-                label="Max Utenti"
-                type="number"
-                fullWidth
-                size="small"
-                value={newLicense.max_users}
-                onChange={(e) => setNewLicense({ ...newLicense, max_users: parseInt(e.target.value) || 1 })}
-                inputProps={{ min: 1 }}
-              />
-            </Grid>
-            <Grid item xs={6} md={3}>
-              <TextField
-                label="Max Istanze"
-                type="number"
-                fullWidth
-                size="small"
-                value={newLicense.max_instances}
-                onChange={(e) => setNewLicense({ ...newLicense, max_instances: parseInt(e.target.value) || 1 })}
-                inputProps={{ min: 1 }}
-              />
-            </Grid>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={6} md={3}>
+                  <TextField
+                    label="Max Utenti"
+                    type="number"
+                    fullWidth
+                    size="small"
+                    value={newLicense.max_users}
+                    onChange={(e) => setNewLicense({ ...newLicense, max_users: parseInt(e.target.value) || 1 })}
+                    inputProps={{ min: 1 }}
+                  />
+                </Grid>
+                <Grid item xs={6} md={3}>
+                  <TextField
+                    label="Max Istanze"
+                    type="number"
+                    fullWidth
+                    size="small"
+                    value={newLicense.max_instances}
+                    onChange={(e) => setNewLicense({ ...newLicense, max_instances: parseInt(e.target.value) || 1 })}
+                    inputProps={{ min: 1 }}
+                  />
+                </Grid>
+              </>
+            )}
+            
             <Grid item xs={12} md={6}>
               <FormControl fullWidth size="small">
                 <InputLabel>Tipo Deployment</InputLabel>
@@ -836,7 +915,7 @@ const LicensesPage: React.FC = () => {
                       value=""
                       onChange={(e) => addAppEntitlement(e.target.value as string)}
                     >
-                      {AVAILABLE_APPS.filter(app => !appsEntitlements[app.id]).map((app) => (
+                      {availableApps.filter(app => !appsEntitlements[app.id]).map((app) => (
                         <MenuItem key={app.id} value={app.id}>
                           {app.name} - {app.description}
                         </MenuItem>
@@ -847,7 +926,7 @@ const LicensesPage: React.FC = () => {
                 
                 {/* App Entitlements */}
                 {Object.entries(appsEntitlements).map(([appId, ent]: [string, AppEntitlement]) => {
-                  const appInfo = AVAILABLE_APPS.find(a => a.id === appId);
+                  const appInfo = availableApps.find(a => a.id === appId);
                   return (
                     <Grid item xs={12} key={appId}>
                       <Accordion defaultExpanded>
@@ -940,7 +1019,7 @@ const LicensesPage: React.FC = () => {
                                   onChange={(e) => updateAppEntitlement(appId, 'modules', e.target.value as string[])}
                                   renderValue={(selected) => (selected as string[]).join(', ')}
                                 >
-                                  {MODULES_OPTIONS.map((mod) => (
+                                  {modulesOptions.map((mod) => (
                                     <MenuItem key={mod} value={mod}>{mod}</MenuItem>
                                   ))}
                                 </Select>
@@ -1030,7 +1109,7 @@ const LicensesPage: React.FC = () => {
                     Entitlement Multi-App
                   </Typography>
                   {Object.entries(selectedLicense.apps_entitlements).map(([appId, ent]: [string, AppEntitlement]) => {
-                    const appInfo = AVAILABLE_APPS.find(a => a.id === appId);
+                    const appInfo = availableApps.find(a => a.id === appId);
                     return (
                       <Box key={appId} sx={{ mb: 2, p: 1.5, bgcolor: 'grey.50', borderRadius: 1 }}>
                         <Typography variant="body2" fontWeight={600}>

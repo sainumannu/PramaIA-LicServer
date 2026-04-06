@@ -278,6 +278,42 @@ async def revoke_license(
         )
 
 
+# ==================== DELETE license ====================
+
+@router.delete("/{license_id}")
+async def delete_license(
+    license_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: TokenPayload = Depends(require_admin)
+):
+    """
+    Delete a license permanently (Admin only).
+    
+    This action is irreversible. Use revoke for soft-delete.
+    """
+    service = LicenseService(db)
+    
+    try:
+        success = await service.delete_license(license_id)
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"License {license_id} not found"
+            )
+        return {
+            "success": True,
+            "license_id": license_id,
+            "message": f"License {license_id} deleted permanently"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete license: {str(e)}"
+        )
+
+
 # ==================== Additional utility endpoints ====================
 
 @router.get("/", response_model=LicenseListResponse)

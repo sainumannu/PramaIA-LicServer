@@ -204,6 +204,16 @@ class LicenseService:
         )
         return result.scalar_one_or_none()
     
+    async def delete_license(self, license_id: str) -> bool:
+        """Delete a license permanently."""
+        license = await self.get_license(license_id)
+        if not license:
+            return False
+        
+        await self.db.delete(license)
+        await self.db.commit()
+        return True
+    
     async def list_licenses(
         self,
         tenant_id: Optional[str] = None,

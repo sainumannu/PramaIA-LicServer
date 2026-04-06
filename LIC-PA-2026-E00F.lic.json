@@ -1,0 +1,49 @@
+{
+  "license": {
+    "license_id": "LIC-PA-2026-E00F",
+    "customer": {
+      "name": "Comune di Tempio Pausania",
+      "vat_or_cf": "00253250906"
+    },
+    "entitlements": {
+      "modules": [],
+      "max_users": 10,
+      "max_instances": 1,
+      "max_version": null
+    },
+    "environment": {
+      "fingerprint": null,
+      "deployment_type": "on_prem"
+    },
+    "validity": {
+      "issued_at": "2026-03-28",
+      "expires_at": "2030-12-31",
+      "maintenance_until": null
+    },
+    "status": "active",
+    "tenant_id": "default",
+    "apps_entitlements": {
+      "pramaia-helpdesk": {
+        "enabled": true,
+        "modules": [],
+        "users": {
+          "admin": 3,
+          "standard": 5,
+          "viewer": 100
+        },
+        "max_instances": 5,
+        "features": null
+      }
+    },
+    "global_limits": {
+      "max_total_users": null,
+      "max_concurrent_sessions": null,
+      "max_tenants": null,
+      "max_api_calls_per_day": null
+    }
+  },
+  "signature": "TCuDbkuY74PcNnEnE2Bg3Zj4YC82GVdn2nMx9wvDUcdjkl5zujnyZwTD//dDOdkx+G9pL6BjZC4Nf/RZzlZxXD09M7taXQP4kJUOThOh00Utsa0j9kIdT23AeBB/oBdvVqX0Arl7i6PBSz7NtWQWsAjSCzUNz6Sx9f5W9xPpzWVsEOwto/H8w6+c5z9hxbteBHrGFufJR3wXO6yI6WmwsfVac/DgM7osRebzgEyVMUDwE+QdOXKMnB2uGY2oYJQW7QelG2AkrT5MVKS0GrS1Cwp3/AJujV3GQSU+NSHS2dsoE8nIqECFxa+pQHxI2q4XSTL6sMpdEPytOFc2Hu4dmw==",
+  "signed_at": "2026-03-28T13:34:12.614177Z",
+  "key_fingerprint": "88c66c56fe792281",
+  "algorithm": "RSA-SHA256"
+}

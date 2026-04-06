@@ -4,6 +4,7 @@ from backend.models import example_model  # noqa: F401
 from backend.models import team_member  # noqa: F401
 from backend.models import license  # noqa: F401
 from backend.models import customer  # noqa: F401
+from backend.models import cached_app  # noqa: F401
 
 
 async def init_database() -> None:

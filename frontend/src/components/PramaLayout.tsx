@@ -31,7 +31,6 @@ interface PramaLayoutProps {
 
 export const PramaLayout: React.FC<PramaLayoutProps> = ({ children, pageTitle }) => {
   const user = authGuard.getCurrentUser();
-  const PORTAL_URL = process.env.REACT_APP_PORTAL_URL || 'http://localhost:3080';
   const { themeName, setThemeName } = useThemeContext();
 
   return (
@@ -46,11 +45,11 @@ export const PramaLayout: React.FC<PramaLayoutProps> = ({ children, pageTitle })
         }}
       >
         <Toolbar sx={{ gap: 1 }}>
-          {/* Torna al Portal */}
-          <Tooltip title="Back to PramaIA Portal">
+          {/* Home */}
+          <Tooltip title="Home">
             <IconButton
               component="a"
-              href={PORTAL_URL}
+              href="/"
               size="small"
               sx={{ color: 'text.secondary', mr: 0.5 }}
             >
