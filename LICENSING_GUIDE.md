@@ -13,9 +13,10 @@ Questa guida descrive tutte le modalità di utilizzo del sistema di licenze Pram
 5. [Limiti e Entitlements](#limiti-e-entitlements)
 6. [Stati della Licenza](#stati-della-licenza)
 7. [Tipi di Deployment](#tipi-di-deployment)
-8. [Flussi Operativi](#flussi-operativi)
-9. [API Endpoints](#api-endpoints)
-10. [Esempi Pratici](#esempi-pratici)
+8. [Fingerprint Binding (Anti-Pirateria)](#-fingerprint-binding-anti-pirateria)
+9. [Flussi Operativi](#flussi-operativi)
+10. [API Endpoints](#api-endpoints)
+11. [Esempi Pratici](#esempi-pratici)
 
 ---
 
@@ -220,6 +221,99 @@ Il tipo di deployment può influenzare:
 - Validazione del fingerprint
 - Modalità di heartbeat
 - Requisiti di connettività
+
+---
+
+## 🔒 Fingerprint Binding (Anti-Pirateria)
+
+Il fingerprint lega una licenza a uno specifico ambiente, impedendo che venga usata su macchine diverse.
+
+### Come Funziona
+
+1. **Cliente genera fingerprint** del suo server/ambiente
+2. **Cliente invia fingerprint** all'admin (email, ticket, form)
+3. **Admin inserisce fingerprint** nel form di creazione licenza
+4. **Licenza emessa** con fingerprint legato
+5. **Validazione runtime** richiede fingerprint corrispondente
+
+### Generazione Fingerprint (Lato Client)
+
+Il client deve generare un hash unico basato su caratteristiche hardware:
+
+```python
+import hashlib
+import platform
+import uuid
+
+def generate_fingerprint() -> str:
+    """Genera fingerprint unico per l'ambiente."""
+    components = [
+        platform.node(),              # hostname
+        platform.machine(),           # architettura (x86_64, ARM, etc.)
+        str(uuid.getnode()),          # MAC address della NIC primaria
+        platform.system(),            # OS (Windows, Linux, etc.)
+        # Opzionale per maggiore sicurezza:
+        # - Serial number disco
+        # - ID motherboard
+        # - CPU ID
+    ]
+    raw = "|".join(components)
+    return hashlib.sha256(raw.encode()).hexdigest()[:32]
+
+# Esempio output: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
+```
+
+```javascript
+// Node.js
+const crypto = require('crypto');
+const os = require('os');
+
+function generateFingerprint() {
+  const components = [
+    os.hostname(),
+    os.arch(),
+    os.platform(),
+    os.networkInterfaces()['eth0']?.[0]?.mac || 'unknown'
+  ];
+  return crypto.createHash('sha256')
+    .update(components.join('|'))
+    .digest('hex')
+    .substring(0, 32);
+}
+```
+
+### Validazione con Fingerprint
+
+Quando l'app client valida la licenza, **deve** includere il fingerprint:
+
+```json
+// POST /api/licenses/validate
+{
+  "license_id": "LIC-PA-2026-XXXX",
+  "fingerprint": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
+}
+```
+
+**Risposte possibili:**
+
+| Scenario | Response |
+|----------|----------|
+| ✅ Fingerprint corrisponde | `{"valid": true, ...}` |
+| ❌ Fingerprint mancante | `{"valid": false, "message": "Fingerprint required"}` |
+| ❌ Fingerprint diverso | `{"valid": false, "message": "Fingerprint mismatch"}` |
+
+### Licenze Senza Fingerprint
+
+Se la licenza viene emessa **senza** fingerprint:
+- La validazione passa senza controllo ambiente
+- Utile per licenze demo, trial, o cloud multi-tenant
+
+### Best Practices Fingerprint
+
+1. **Genera al primo avvio** e salva localmente
+2. **Non rigenerare** ad ogni avvio (cambierebbe se cambia MAC/hostname)
+3. **Comunica chiaramente** al cliente come ottenerlo
+4. **Log tentativi falliti** per rilevare abusi
 
 ---
 

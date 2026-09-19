@@ -156,6 +156,7 @@ const LicensesPage: React.FC = () => {
     max_users: 10,
     max_instances: 1,
     deployment_type: 'on_prem',
+    fingerprint: '',
     expires_at: '',
     maintenance_until: '',
   });
@@ -201,7 +202,7 @@ const LicensesPage: React.FC = () => {
       console.error('Failed to load apps config:', err);
       // Nessuna app inventata: una licenza firmata per un'app inesistente sarebbe un danno silenzioso.
       setAvailableApps([]);
-      setAppsError('Impossibile caricare l'elenco delle applicazioni dal server.');
+      setAppsError('Impossibile caricare l\'elenco delle applicazioni dal server.');
       setModulesOptions(['chat', 'documents', 'analysis']);
     } finally {
       setAppsLoading(false);
@@ -269,6 +270,7 @@ const LicensesPage: React.FC = () => {
         },
         environment: {
           deployment_type: newLicense.deployment_type,
+          fingerprint: newLicense.fingerprint || undefined,
         },
         validity: {
           expires_at: newLicense.expires_at,
@@ -313,6 +315,7 @@ const LicensesPage: React.FC = () => {
         max_users: 10,
         max_instances: 1,
         deployment_type: 'on_prem',
+        fingerprint: '',
         expires_at: '',
         maintenance_until: '',
       });
@@ -812,6 +815,17 @@ const LicensesPage: React.FC = () => {
                   <MenuItem value="hybrid">Hybrid</MenuItem>
                 </Select>
               </FormControl>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                label="Fingerprint Ambiente"
+                fullWidth
+                size="small"
+                value={newLicense.fingerprint}
+                onChange={(e) => setNewLicense({ ...newLicense, fingerprint: e.target.value })}
+                placeholder="Hash fornito dal cliente (opzionale)"
+                helperText="Se specificato, la licenza sarà valida solo per questo ambiente"
+              />
             </Grid>
             
             {/* Validity */}

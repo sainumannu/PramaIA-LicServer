@@ -295,15 +295,23 @@ class LicenseService:
                 expires_at=license.expires_at
             )
         
-        # Check fingerprint if provided
-        if request.fingerprint and license.fingerprint:
+        # Check fingerprint - if license has fingerprint, request MUST provide matching one
+        if license.fingerprint:
+            if not request.fingerprint:
+                return ValidateResponse(
+                    valid=False,
+                    license_id=license.license_id,
+                    status=LicenseStatusEnum(license.status.value),
+                    message="Fingerprint required - this license is bound to a specific environment",
+                    details={"fingerprint_required": True}
+                )
             if request.fingerprint != license.fingerprint:
                 return ValidateResponse(
                     valid=False,
                     license_id=license.license_id,
                     status=LicenseStatusEnum(license.status.value),
-                    message="Fingerprint mismatch",
-                    details={"expected_fingerprint": "***", "provided_fingerprint": request.fingerprint[:8] + "..."}
+                    message="Fingerprint mismatch - license not valid for this environment",
+                    details={"fingerprint_required": True, "provided_fingerprint": request.fingerprint[:8] + "..."}
                 )
         
         # Check module access if specified
