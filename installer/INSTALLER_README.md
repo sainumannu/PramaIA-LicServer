@@ -41,6 +41,8 @@ Per cambiare modalità dopo l'installazione: modificare `.env` e riavviare il se
 | 4 | Permessi ristretti su `.env` e `data\` (solo SYSTEM e Administrators) |
 | 5 | (Opzionale) regola firewall, poi installazione e avvio del servizio via NSSM |
 
+**Controllo porta:** se scegli "Installa come servizio", l'installer verifica che la porta sia libera, sia nel wizard sia (a servizio fermo) subito prima di copiare i file. Se è occupata (tipicamente da un server di sviluppo sulla stessa porta) l'installazione si ferma con un messaggio, invece di lasciare un servizio "In esecuzione" che non riesce ad avviarsi. Vale anche per aggiornamenti e installazioni silenziose.
+
 Gli aggiornamenti preservano `.env` e `data\`. Se una nuova versione introduce variabili nuove, hanno un default nel codice; il confronto con un `.env` di riferimento va fatto a mano.
 
 ### Installazione silenziosa
@@ -91,6 +93,14 @@ Start-Service PramaIA-LicServer
 
 Due processi `PramaIA-LicServer.exe` in Task Manager sono **normali** (bootloader PyInstaller + worker).
 
+**Sintomo tipico:** il servizio risulta "In esecuzione" ma la pagina non risponde e `logs\licserver.log` mostra avvii ripetuti. NSSM è attivo e rilancia l'exe, che si chiude subito perché la porta è occupata (`service-error.log` riporta il 10048). Per trovare chi la occupa:
+
+```powershell
+Get-NetTCPConnection -State Listen -LocalPort 8030 | Select-Object LocalAddress,OwningProcess
+```
+
+Il servizio è configurato con `AppThrottle 30000`: un avvio che dura meno di 30 s è considerato fallito e NSSM allunga progressivamente la pausa tra i riavvii, senza riempire i log.
+
 ### Regole per chi modifica `installer.iss`
 
 1. Stop servizio in `PrepareToInstall` (prima dei file), mai solo in `[Run]`
@@ -132,7 +142,7 @@ La versione viene passata a Inno Setup con `/DMyAppVersion` (il `.iss` non viene
 | Errore | Causa | Rimedio |
 |--------|-------|---------|
 | File in uso / accesso negato su exe o `nssm.exe` | Servizio ancora in esecuzione durante la copia | `PrepareToInstall`, oppure stop manuale admin prima del setup |
-| `WinError 10048` | Due bind sulla stessa porta | Vedi §4 |
+| `WinError 10048` / servizio "Running" ma pagina non raggiungibile | Porta già occupata (doppio avvio o server di sviluppo) | Vedi §4 |
 | Pagina bianca / 401 in modalità Portal | Accesso senza token, o secret diverso dal Portal | Entrare dal Portal; verificare `PRAMAIA_JWT_SECRET` |
 | Servizio non parte | `.env` mancante/errato | `logs\licserver.log` e `logs\service-error.log` |
 | Licenze emesse non più valide | Chiavi rigenerate | Ripristinare `data\keys` dal backup (§3) |

@@ -180,6 +180,20 @@ begin
   Result := RunHidden(ExpandConstant('{app}\nssm.exe'), Params);
 end;
 
+{ True se qualcosa e' gia' in ascolto sulla porta TCP indicata (findstr esce con 0 se trova la riga). }
+function IsPortInUse(Port: Integer): Boolean;
+begin
+  Result := RunHidden(ExpandConstant('{cmd}'),
+    '/C netstat -ano | findstr /R /C:":' + IntToStr(Port) + ' .*LISTENING" >nul') = 0;
+end;
+
+function PortInUseMessage(Port: Integer): String;
+begin
+  Result := 'La porta ' + IntToStr(Port) + ' e'' gia'' in uso da un altro programma (ad esempio un server di sviluppo). ' +
+    'Il servizio verrebbe avviato ma non riuscirebbe a mettersi in ascolto.' + NL + NL +
+    'Chiudere il programma che usa la porta oppure scegliere un''altra porta.';
+end;
+
 { ---------------------------------------------------------------------------
   Wizard: modalita' e parametri (solo alla prima installazione)
   --------------------------------------------------------------------------- }
@@ -242,6 +256,11 @@ begin
     begin
       MsgBox('Il PRAMAIA_JWT_SECRET non puo'' contenere apici singoli o a capo.', mbError, MB_OK);
       Result := False;
+    end
+    else if WizardIsTaskSelected('installservice') and IsPortInUse(Port) then
+    begin
+      MsgBox(PortInUseMessage(Port), mbError, MB_OK);
+      Result := False;
     end;
   end;
 end;
@@ -274,6 +293,16 @@ begin
 
   { 3) Attesa breve perche' Windows rilasci gli handle }
   Sleep(1000);
+
+  { 4) Ultima verifica, a servizio fermo: la porta deve essere libera, altrimenti il servizio
+       risulterebbe "In esecuzione" ma andrebbe in crash-loop (WinError 10048). Copre anche gli
+       aggiornamenti e le installazioni silenziose, dove la pagina del wizard non viene mostrata. }
+  if WizardIsTaskSelected('installservice') then
+  begin
+    ResultCode := StrToIntDef(GetBackendPort(''), 0);
+    if (ResultCode > 0) and IsPortInUse(ResultCode) then
+      Result := PortInUseMessage(ResultCode);
+  end;
 end;
 
 { ---------------------------------------------------------------------------
@@ -367,6 +396,9 @@ begin
   Nssm('set {#MyServiceName} AppRotateFiles 1');
   Nssm('set {#MyServiceName} AppRotateBytes 5242880');
   Nssm('set {#MyServiceName} AppExit Default Restart');
+  { Un avvio che dura meno di 30 s e' considerato fallito: NSSM allunga progressivamente la pausa tra i
+    riavvii (fino a ~4 min) invece di rilanciare l'exe ogni pochi secondi e riempire i log. }
+  Nssm('set {#MyServiceName} AppThrottle 30000');
   Nssm('start {#MyServiceName}');
 end;
 
