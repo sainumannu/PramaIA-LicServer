@@ -201,6 +201,18 @@ npm test
 
 ---
 
+## 🪟 Installer Windows
+
+Installer on-premise (Inno Setup + PyInstaller + NSSM): un solo servizio Windows che serve backend e frontend sulla porta 8030.
+
+```powershell
+.\installer\build-release.ps1 -Version "1.0.0"
+```
+
+Output: `installer\output\PramaIA-LicServer-Setup-<versione>.exe`. Guida completa (aggiornamenti, chiavi di firma, installazione silenziosa, troubleshooting): [installer/INSTALLER_README.md](installer/INSTALLER_README.md).
+
+---
+
 ## 🐳 Docker
 
 Avvia l'intero stack con Docker Compose:

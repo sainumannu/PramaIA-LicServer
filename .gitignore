@@ -16,3 +16,10 @@ frontend/.env.local
 
 .DS_Store
 Thumbs.db
+
+# Windows installer build artifacts
+installer/release/
+installer/output/
+installer/build/
+logs/
+data/
