@@ -62,7 +62,8 @@ export const UsersPanel: React.FC = () => {
   const [availableUsers, setAvailableUsers] = useState<AppUser[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [usersError, setUsersError] = useState<string | null>(null);
-  
+  const [standaloneNotice, setStandaloneNotice] = useState(false);
+
   // State per team members (utenti con ruolo in questa app)
   const [teamMembers, setTeamMembers] = useState<AppTeamMember[]>([]);
   const [loadingTeam, setLoadingTeam] = useState(false);
@@ -84,8 +85,15 @@ export const UsersPanel: React.FC = () => {
   };
 
   const loadAvailableUsers = async () => {
-    setLoadingUsers(true);
     setUsersError(null);
+    // Senza token (modalità standalone) non c'è un utente Portal con cui interrogare il Portal
+    if (!authGuard.getToken()) {
+      setStandaloneNotice(true);
+      setAvailableUsers([]);
+      return;
+    }
+    setStandaloneNotice(false);
+    setLoadingUsers(true);
     try {
       const users = await apiClient.get<AppUser[]>('/api/settings/users');
       setAvailableUsers(users || []);
@@ -233,6 +241,12 @@ export const UsersPanel: React.FC = () => {
           </TableContainer>
         )}
       </Box>
+
+      {standaloneNotice && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          Elenco utenti non disponibile in modalità standalone: richiede l'accesso tramite PramaIA Portal.
+        </Alert>
+      )}
 
       {/* Errori */}
       {usersError && (

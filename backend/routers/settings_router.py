@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 import httpx
 
-from backend.auth.portal_jwt import get_current_user, TokenPayload
+from backend.auth.portal_jwt import get_current_user, TokenPayload, STANDALONE_MODE
 from backend.db.database import get_db
 from backend.services.settings_service import SettingsService
 
@@ -88,11 +88,14 @@ async def get_available_users(
     Recupera gli utenti dal Portal che hanno accesso a questa app.
     """
     if not authorization:
+        # Standalone: nessun token Portal da inoltrare, quindi nessun elenco utenti disponibile
+        if STANDALONE_MODE:
+            return []
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token di autenticazione mancante"
         )
-    
+
     svc = SettingsService(db)
     try:
         users = await svc.get_portal_users(authorization)

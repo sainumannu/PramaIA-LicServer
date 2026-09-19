@@ -181,10 +181,12 @@ const LicensesPage: React.FC = () => {
   const [availableApps, setAvailableApps] = useState<AppConfig[]>([]);
   const [modulesOptions, setModulesOptions] = useState<string[]>([]);
   const [appsLoading, setAppsLoading] = useState(true);
+  const [appsError, setAppsError] = useState<string | null>(null);
 
   // Load apps configuration from backend
   const loadAppsConfig = useCallback(async () => {
     setAppsLoading(true);
+    setAppsError(null);
     try {
       const data = await apiClient.get<AppsConfigResponse>('/api/config/apps');
       setAvailableApps(data.apps);
@@ -197,10 +199,9 @@ const LicensesPage: React.FC = () => {
       setModulesOptions(Array.from(allModules).sort());
     } catch (err) {
       console.error('Failed to load apps config:', err);
-      // Fallback
-      setAvailableApps([
-        { id: 'pramaia-mind', name: 'PramaIA Mind', description: 'AI Assistant', modules: ['chat', 'documents'] },
-      ]);
+      // Nessuna app inventata: una licenza firmata per un'app inesistente sarebbe un danno silenzioso.
+      setAvailableApps([]);
+      setAppsError('Impossibile caricare l'elenco delle applicazioni dal server.');
       setModulesOptions(['chat', 'documents', 'analysis']);
     } finally {
       setAppsLoading(false);
@@ -908,6 +909,15 @@ const LicensesPage: React.FC = () => {
                 {/* App Selection */}
                 <Grid item xs={12}>
                   <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>Applicazioni</Typography>
+                  {appsError && (
+                    <Alert
+                      severity="warning"
+                      sx={{ mb: 1 }}
+                      action={<Button color="inherit" size="small" onClick={loadAppsConfig}>Riprova</Button>}
+                    >
+                      {appsError}
+                    </Alert>
+                  )}
                   <FormControl fullWidth size="small">
                     <InputLabel>Aggiungi App</InputLabel>
                     <Select

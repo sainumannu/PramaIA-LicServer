@@ -77,7 +77,8 @@ export const PramaLayout: React.FC<PramaLayoutProps> = ({ children, pageTitle })
               <Typography variant="body2" color="text.secondary" sx={{ mx: 0.5 }}>
                 /
               </Typography>
-              <Typography variant="body2" color="text.primary">
+              {/* Bianco fisso: l'header ha sfondo scuro in tutti i temi */}
+              <Typography variant="body2" sx={{ color: '#fff' }}>
                 {pageTitle}
               </Typography>
             </>
@@ -119,7 +120,7 @@ export const PramaLayout: React.FC<PramaLayoutProps> = ({ children, pageTitle })
               label={user.display_name || user.email}
               size="small"
               variant="outlined"
-              sx={{ borderColor: 'rgba(255,255,255,0.2)', mr: 1 }}
+              sx={{ color: '#fff', borderColor: 'rgba(255,255,255,0.2)', mr: 1 }}
             />
           )}
 
