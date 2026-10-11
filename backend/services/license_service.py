@@ -15,7 +15,8 @@ from backend.schemas.license_schemas import (
     RefreshLicenseRequest, DeactivateRequest, RevokeRequest,
     IssueLicenseRequest, LicenseResponse, ValidateResponse,
     DeploymentTypeEnum, LicenseStatusEnum, CustomerInfo, Entitlements,
-    EnvironmentInfo, ValidityInfo, AppEntitlement, GlobalLimits
+    EnvironmentInfo, ValidityInfo, AppEntitlement, GlobalLimits,
+    ImportActivationRequestFile
 )
 
 
@@ -66,6 +67,49 @@ class LicenseService:
         await self.db.refresh(activation)
         return activation
     
+    async def import_activation_requests(
+        self,
+        payload: ImportActivationRequestFile
+    ) -> Tuple[str, List[ActivationRequest]]:
+        """Crea una ActivationRequest per ogni app del file di richiesta del Portal
+        (docs/LICENZE_MODULI_STANDARD.md §3), conservando il catalogo moduli dell'app:
+        la scelta in fase di emissione si fa sempre su quel catalogo, non su un elenco fisso.
+        """
+        batch_id = f"IMP-{uuid.uuid4().hex[:10].upper()}"
+        created: List[ActivationRequest] = []
+
+        for app in payload.apps:
+            notes = f"Importato da richiesta Portal (lotto {batch_id})."
+            if app.error:
+                notes += f" Catalogo moduli non disponibile: {app.error}"
+
+            activation = ActivationRequest(
+                request_id=generate_request_id(),
+                customer_name=payload.customer.name,
+                customer_vat_or_cf=payload.customer.vat_or_cf,
+                requested_modules=app.requested.modules if app.requested else None,
+                requested_max_users=app.requested.max_users if app.requested else None,
+                fingerprint=app.fingerprint,
+                deployment_type=DeploymentType(app.deployment_type.value) if app.deployment_type else DeploymentType.ON_PREM,
+                status="pending",
+                notes=notes,
+                app_id=app.app_id,
+                app_name=app.app_name,
+                app_version=app.app_version,
+                modules_catalog=[m.model_dump(exclude_none=True) for m in app.modules_catalog] if app.modules_catalog else None,
+                umbrella_module=app.umbrella_module,
+                source="import",
+                import_batch_id=batch_id,
+            )
+            self.db.add(activation)
+            created.append(activation)
+
+        await self.db.commit()
+        for activation in created:
+            await self.db.refresh(activation)
+
+        return batch_id, created
+
     async def get_activation_request(self, request_id: str) -> Optional[ActivationRequest]:
         """Get an activation request by ID."""
         result = await self.db.execute(

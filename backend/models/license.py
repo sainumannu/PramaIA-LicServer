@@ -166,7 +166,22 @@ class ActivationRequest(Base):
     
     # If approved, link to the issued license
     issued_license_id = Column(String(50), nullable=True)
-    
+
     # Notes
     notes = Column(Text, nullable=True)
     rejection_reason = Column(Text, nullable=True)
+
+    # Source app (set when the request comes from a Portal import file - one request per app).
+    # See docs: LICENZE_MODULI_STANDARD.md §3 for the import file format.
+    app_id = Column(String(100), nullable=True, index=True)
+    app_name = Column(String(255), nullable=True)
+    app_version = Column(String(50), nullable=True)
+    # Snapshot of the app's module catalog at import time (list of {code, name, tab, ...}):
+    # the license is always issued against the catalog the app declared, not a fixed list.
+    modules_catalog = Column(JSON, nullable=True)
+    umbrella_module = Column(String(100), nullable=True)
+
+    # "manual" (POST /activate-request) or "import" (POST /activation-requests/import)
+    source = Column(String(20), nullable=False, default="manual")
+    # Groups requests created together from the same imported file (one file -> one request per app)
+    import_batch_id = Column(String(50), nullable=True, index=True)

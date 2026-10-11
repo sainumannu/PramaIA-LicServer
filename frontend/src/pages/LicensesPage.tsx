@@ -104,6 +104,54 @@ interface VerifyResponse {
   expires_at?: string;
 }
 
+// Richieste di attivazione importate dal file del Portal
+// (vedi C:/PramaIA-HelpDesk/docs/LICENZE_MODULI_STANDARD.md §3)
+interface ActivationRequestModuleCatalogEntry {
+  code: string;
+  name?: Record<string, string>;
+  [key: string]: any;
+}
+
+interface ActivationRequestItem {
+  request_id: string;
+  customer_name: string;
+  customer_vat_or_cf: string;
+  customer_email?: string;
+  status: string;
+  requested_at: string;
+  processed_at?: string;
+  issued_license_id?: string;
+  app_id?: string;
+  app_name?: string;
+  app_version?: string;
+  fingerprint?: string;
+  deployment_type?: string;
+  requested_modules?: string[];
+  requested_max_users?: number;
+  modules_catalog?: ActivationRequestModuleCatalogEntry[];
+  umbrella_module?: string;
+  source?: string;
+  notes?: string;
+}
+
+interface ActivationRequestListResponse {
+  requests: ActivationRequestItem[];
+  total: number;
+}
+
+interface ImportActivationRequestsResponse {
+  success: boolean;
+  import_batch_id: string;
+  imported: { request_id: string; app_id: string; app_name?: string; status: string }[];
+  message: string;
+}
+
+const REQUEST_STATUS_COLORS: Record<string, 'success' | 'warning' | 'error' | 'default'> = {
+  pending: 'warning',
+  approved: 'success',
+  rejected: 'error',
+};
+
 const STATUS_COLORS: Record<string, 'success' | 'warning' | 'error' | 'info' | 'default'> = {
   active: 'success',
   pending: 'warning',
@@ -184,6 +232,12 @@ const LicensesPage: React.FC = () => {
   const [appsLoading, setAppsLoading] = useState(true);
   const [appsError, setAppsError] = useState<string | null>(null);
 
+  // Activation requests (importate dal file del Portal)
+  const [activationRequests, setActivationRequests] = useState<ActivationRequestItem[]>([]);
+  const [loadingRequests, setLoadingRequests] = useState(false);
+  const [requestsError, setRequestsError] = useState<string | null>(null);
+  const [importingRequest, setImportingRequest] = useState(false);
+
   // Load apps configuration from backend
   const loadAppsConfig = useCallback(async () => {
     setAppsLoading(true);
@@ -251,10 +305,26 @@ const LicensesPage: React.FC = () => {
     }
   };
 
+  // Load activation requests (solo Admin: l'endpoint richiede require_admin)
+  const loadActivationRequests = useCallback(async () => {
+    setLoadingRequests(true);
+    setRequestsError(null);
+    try {
+      const data = await apiClient.get<ActivationRequestListResponse>('/api/licenses/activation-requests?limit=100');
+      setActivationRequests(data.requests || []);
+    } catch (err: any) {
+      console.error('Failed to load activation requests:', err);
+      setRequestsError(err.message || 'Impossibile caricare le richieste di attivazione');
+    } finally {
+      setLoadingRequests(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadLicenses();
     loadAppsConfig();
-  }, [loadLicenses, loadAppsConfig]);
+    if (isAdmin) loadActivationRequests();
+  }, [loadLicenses, loadAppsConfig, loadActivationRequests, isAdmin]);
 
   useEffect(() => {
     if (createDialogOpen) loadCustomers();
@@ -428,6 +498,54 @@ const LicensesPage: React.FC = () => {
     }
   };
 
+  const handleImportRequestFile = async (file: File) => {
+    setImportingRequest(true);
+    setRequestsError(null);
+    try {
+      const content = await file.text();
+      let payload: any;
+      try {
+        payload = JSON.parse(content);
+      } catch {
+        throw new Error('Il file non è un JSON valido');
+      }
+      const result = await apiClient.post<ImportActivationRequestsResponse>(
+        '/api/licenses/activation-requests/import',
+        payload
+      );
+      setSuccess(result.message);
+      await loadActivationRequests();
+    } catch (err: any) {
+      setRequestsError(err.message || 'Importazione non riuscita');
+    } finally {
+      setImportingRequest(false);
+    }
+  };
+
+  // Precompila il dialog di creazione con i dati della richiesta (cliente, fingerprint,
+  // moduli richiesti filtrati sul catalogo dell'app). L'operatore personalizza il resto
+  // nel dialog esistente, inclusa la modalità Multi-App se serve.
+  const handleUseActivationRequest = (req: ActivationRequestItem) => {
+    const catalogCodes = (req.modules_catalog || []).map((m) => m.code);
+    if (catalogCodes.length > 0) {
+      setModulesOptions((prev) => Array.from(new Set([...prev, ...catalogCodes])).sort());
+    }
+    const preselected = (req.requested_modules || []).filter(
+      (m) => catalogCodes.length === 0 || catalogCodes.includes(m)
+    );
+    setNewLicense((prev) => ({
+      ...prev,
+      customer_name: req.customer_name,
+      customer_vat: req.customer_vat_or_cf,
+      modules: preselected,
+      max_users: req.requested_max_users || prev.max_users,
+      deployment_type: req.deployment_type || prev.deployment_type,
+      fingerprint: req.fingerprint || '',
+    }));
+    setUseMultiApp(false);
+    setCreateDialogOpen(true);
+  };
+
   const handleCustomerSelect = (customerId: string) => {
     const customer = customers.find((c: CustomerOption) => c.customer_id === customerId);
     if (customer) {
@@ -461,6 +579,7 @@ const LicensesPage: React.FC = () => {
       <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)} sx={{ mb: 3 }}>
         <Tab label="Elenco Licenze" />
         <Tab label="Verifica File" />
+        {isAdmin && <Tab label="Richieste Attivazione" />}
       </Tabs>
 
       {/* Tab: License List */}
@@ -695,6 +814,115 @@ const LicensesPage: React.FC = () => {
                 )}
               </Alert>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tab: Activation Requests (importate dal file del Portal) */}
+      {isAdmin && activeTab === 2 && (
+        <Card>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1, flexWrap: 'wrap', gap: 2 }}>
+              <Box>
+                <Typography variant="h6">Richieste di Attivazione</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Importa il file generato dal Portal: crea una richiesta per ogni app, con il relativo catalogo moduli.
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button
+                  variant="contained"
+                  component="label"
+                  disabled={importingRequest}
+                  startIcon={importingRequest ? <CircularProgress size={16} /> : <AddIcon />}
+                >
+                  Importa Richiesta
+                  <input
+                    type="file"
+                    hidden
+                    accept=".json"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = '';
+                      if (file) handleImportRequestFile(file);
+                    }}
+                  />
+                </Button>
+                <Tooltip title="Ricarica">
+                  <IconButton onClick={loadActivationRequests} disabled={loadingRequests}>
+                    <RefreshIcon />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            </Box>
+
+            {requestsError && (
+              <Alert severity="error" sx={{ mb: 2 }} onClose={() => setRequestsError(null)}>
+                {requestsError}
+              </Alert>
+            )}
+
+            <TableContainer component={Paper} variant="outlined" sx={{ mt: 2 }}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Data</TableCell>
+                    <TableCell>Cliente</TableCell>
+                    <TableCell>App</TableCell>
+                    <TableCell>Moduli Richiesti</TableCell>
+                    <TableCell>Max Utenti</TableCell>
+                    <TableCell>Stato</TableCell>
+                    <TableCell align="right">Azioni</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {loadingRequests ? (
+                    <TableRow>
+                      <TableCell component="td" {...{ colSpan: 7 }} align="center" sx={{ py: 4 }}>
+                        <CircularProgress size={24} />
+                      </TableCell>
+                    </TableRow>
+                  ) : activationRequests.length === 0 ? (
+                    <TableRow>
+                      <TableCell component="td" {...{ colSpan: 7 }} align="center" sx={{ py: 4 }}>
+                        <Typography color="text.secondary">Nessuna richiesta di attivazione</Typography>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    activationRequests.map((req) => (
+                      <TableRow key={req.request_id} hover>
+                        <TableCell>{formatDate(req.requested_at)}</TableCell>
+                        <TableCell>
+                          <Typography variant="body2">{req.customer_name}</Typography>
+                          <Typography variant="caption" color="text.secondary">{req.customer_vat_or_cf}</Typography>
+                        </TableCell>
+                        <TableCell>{req.app_name || req.app_id || '-'}</TableCell>
+                        <TableCell>
+                          {req.requested_modules && req.requested_modules.length > 0
+                            ? req.requested_modules.join(', ')
+                            : <Typography variant="caption" color="text.secondary">Nessuno specificato</Typography>}
+                        </TableCell>
+                        <TableCell>{req.requested_max_users ?? '-'}</TableCell>
+                        <TableCell>
+                          <Chip
+                            label={req.status}
+                            size="small"
+                            color={REQUEST_STATUS_COLORS[req.status] || 'default'}
+                          />
+                        </TableCell>
+                        <TableCell align="right">
+                          {req.status === 'pending' && (
+                            <Button size="small" onClick={() => handleUseActivationRequest(req)}>
+                              Usa per nuova licenza
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
           </CardContent>
         </Card>
       )}

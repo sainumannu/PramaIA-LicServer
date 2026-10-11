@@ -166,6 +166,69 @@ class ActivationRequestResponse(BaseModel):
         from_attributes = True
 
 
+# ============== Activation Request Import (Portal request file) ==============
+# Formato del file: docs/LICENZE_MODULI_STANDARD.md §3 (PramaIA-HelpDesk).
+# Un file puo' contenere piu' app per lo stesso cliente: viene creata una ActivationRequest per app,
+# ciascuna con il proprio catalogo moduli (la scelta si fa sempre sui moduli che l'app dichiara).
+
+class ImportModuleCatalogEntry(BaseModel):
+    """Una voce del catalogo moduli dichiarato dall'app. Forma libera oltre a 'code':
+    ogni app puo' aggiungere campi (name/description multilingua, tab, enforcement, ...)."""
+    code: str = Field(..., min_length=1)
+
+    class Config:
+        extra = "allow"
+
+
+class ImportRequestedEntitlements(BaseModel):
+    """Proposta di moduli/utenti scelta dall'amministratore del Portal: un suggerimento per
+    LicServer, non un vincolo (l'operatore può modificarla in fase di emissione)."""
+    modules: Optional[List[str]] = None
+    max_users: Optional[int] = Field(default=None, ge=1)
+
+
+class ImportAppEntry(BaseModel):
+    app_id: str = Field(..., min_length=1, max_length=100)
+    app_name: Optional[str] = Field(default=None, max_length=255)
+    app_version: Optional[str] = Field(default=None, max_length=50)
+    fingerprint: Optional[str] = None
+    deployment_type: Optional[DeploymentTypeEnum] = None
+    # None = il Portal non è riuscito a leggere il catalogo di questa app (vedi 'error')
+    modules_catalog: Optional[List[ImportModuleCatalogEntry]] = None
+    umbrella_module: Optional[str] = None
+    requested: Optional[ImportRequestedEntitlements] = None
+    error: Optional[str] = Field(default=None, description="Es. app non raggiungibile dal Portal")
+
+
+class ImportCustomerInfo(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    vat_or_cf: str = Field(..., min_length=1, max_length=20)
+
+
+class ImportActivationRequestFile(BaseModel):
+    """Corpo di POST /api/licenses/activation-requests/import."""
+    request_version: int = 1
+    generated_at: Optional[datetime] = None
+    portal: Optional[Dict[str, Any]] = None
+    customer: ImportCustomerInfo
+    apps: List[ImportAppEntry] = Field(..., min_length=1)
+
+
+class ImportedRequestSummary(BaseModel):
+    request_id: str
+    app_id: str
+    app_name: Optional[str] = None
+    status: str
+
+
+class ImportActivationRequestsResponse(BaseModel):
+    success: bool
+    import_batch_id: str
+    customer: ImportCustomerInfo
+    imported: List[ImportedRequestSummary]
+    message: str
+
+
 # ============== Validation schemas ==============
 
 class ValidateRequest(BaseModel):

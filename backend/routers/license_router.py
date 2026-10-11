@@ -16,7 +16,8 @@ from backend.schemas.license_schemas import (
     RevokeRequest, RevokeResponse,
     IssueLicenseRequest, IssueLicenseResponse,
     LicenseResponse, LicenseListResponse,
-    LicenseStatusEnum
+    LicenseStatusEnum,
+    ImportActivationRequestFile, ImportActivationRequestsResponse, ImportedRequestSummary
 )
 from backend.models.license import LicenseStatus
 
@@ -364,17 +365,17 @@ async def list_activation_requests(
 ):
     """
     List activation requests (Admin only).
-    
+
     Returns pending, approved, or rejected activation requests.
     """
     service = LicenseService(db)
-    
+
     requests, total = await service.list_activation_requests(
         status=status,
         limit=limit,
         offset=offset
     )
-    
+
     return {
         "requests": [
             {
@@ -385,9 +386,60 @@ async def list_activation_requests(
                 "status": req.status,
                 "requested_at": req.requested_at,
                 "processed_at": req.processed_at,
-                "issued_license_id": req.issued_license_id
+                "issued_license_id": req.issued_license_id,
+                "app_id": req.app_id,
+                "app_name": req.app_name,
+                "app_version": req.app_version,
+                "fingerprint": req.fingerprint,
+                "deployment_type": req.deployment_type.value if req.deployment_type else None,
+                "requested_modules": req.requested_modules,
+                "requested_max_users": req.requested_max_users,
+                "modules_catalog": req.modules_catalog,
+                "umbrella_module": req.umbrella_module,
+                "source": req.source,
+                "notes": req.notes,
             }
             for req in requests
         ],
         "total": total
     }
+
+
+# ==================== POST /activation-requests/import ====================
+@router.post("/activation-requests/import", response_model=ImportActivationRequestsResponse)
+async def import_activation_requests(
+    payload: ImportActivationRequestFile,
+    db: AsyncSession = Depends(get_db),
+    current_user: TokenPayload = Depends(require_admin)
+):
+    """
+    Importa il file di richiesta generato dal Portal (Admin only).
+
+    Crea una ActivationRequest per ogni app elencata nel file, conservando il catalogo
+    moduli dichiarato dall'app: vedi docs/LICENZE_MODULI_STANDARD.md §3 per il formato.
+    """
+    service = LicenseService(db)
+
+    try:
+        batch_id, created = await service.import_activation_requests(payload)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Importazione richiesta non riuscita: {str(e)}"
+        )
+
+    return ImportActivationRequestsResponse(
+        success=True,
+        import_batch_id=batch_id,
+        customer=payload.customer,
+        imported=[
+            ImportedRequestSummary(
+                request_id=req.request_id,
+                app_id=req.app_id,
+                app_name=req.app_name,
+                status=req.status
+            )
+            for req in created
+        ],
+        message=f"Importate {len(created)} richieste di attivazione per {payload.customer.name}"
+    )
