@@ -14,6 +14,7 @@ import KeyIcon from '@mui/icons-material/Key';
 import BusinessIcon from '@mui/icons-material/Business';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import { useTranslation } from 'react-i18next';
 import { PramaLayout } from '../components/PramaLayout';
 import { apiClient } from '../services/apiClient';
 import { authGuard } from '../services/authGuard';
@@ -26,6 +27,7 @@ interface Stats {
 }
 
 const HomePage: React.FC = () => {
+  const { t } = useTranslation();
   const user = authGuard.getCurrentUser();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -68,22 +70,22 @@ const HomePage: React.FC = () => {
 
   const quickLinks = [
     {
-      title: 'Gestione Licenze',
-      description: 'Crea, visualizza e gestisci le licenze software',
+      title: t('home.links.licensesTitle'),
+      description: t('home.links.licensesDescription'),
       icon: <KeyIcon sx={{ fontSize: 48 }} />,
       href: '/licenses',
       color: '#10b981',
     },
     {
-      title: 'Gestione Clienti',
-      description: 'Anagrafica clienti e informazioni di contatto',
+      title: t('home.links.customersTitle'),
+      description: t('home.links.customersDescription'),
       icon: <BusinessIcon sx={{ fontSize: 48 }} />,
       href: '/customers',
       color: '#3b82f6',
     },
     {
-      title: 'Verifica Licenze',
-      description: 'Verifica l\'autenticità dei file di licenza firmati',
+      title: t('home.links.verifyTitle'),
+      description: t('home.links.verifyDescription'),
       icon: <VerifiedIcon sx={{ fontSize: 48 }} />,
       href: '/licenses',
       color: '#8b5cf6',
@@ -91,14 +93,14 @@ const HomePage: React.FC = () => {
   ];
 
   return (
-    <PramaLayout pageTitle="Dashboard">
+    <PramaLayout pageTitle={t('home.pageTitle')}>
       {/* Welcome */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" sx={{ mb: 0.5 }}>
-          Benvenuto, {user?.display_name || user?.email || 'Utente'}
+          {t('home.welcome', { name: user?.display_name || user?.email || t('home.defaultUser') })}
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Sistema di gestione licenze PramaIA
+          {t('home.subtitle')}
         </Typography>
       </Box>
 
@@ -121,7 +123,7 @@ const HomePage: React.FC = () => {
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Box>
                     <Typography color="text.secondary" variant="body2">
-                      Licenze Totali
+                      {t('home.stats.totalLicenses')}
                     </Typography>
                     <Typography variant="h4" fontWeight={600}>
                       {stats.totalLicenses}
@@ -138,7 +140,7 @@ const HomePage: React.FC = () => {
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Box>
                     <Typography color="text.secondary" variant="body2">
-                      Licenze Attive
+                      {t('home.stats.activeLicenses')}
                     </Typography>
                     <Typography variant="h4" fontWeight={600} color="success.main">
                       {stats.activeLicenses}
@@ -155,14 +157,14 @@ const HomePage: React.FC = () => {
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Box>
                     <Typography color="text.secondary" variant="body2">
-                      In Scadenza (30gg)
+                      {t('home.stats.expiringLicenses')}
                     </Typography>
                     <Typography variant="h4" fontWeight={600} color={stats.expiringLicenses > 0 ? 'warning.main' : 'text.primary'}>
                       {stats.expiringLicenses}
                     </Typography>
                   </Box>
                   {stats.expiringLicenses > 0 && (
-                    <Chip label="Attenzione" color="warning" size="small" />
+                    <Chip label={t('home.stats.expiringWarning')} color="warning" size="small" />
                   )}
                 </Box>
               </CardContent>
@@ -174,7 +176,7 @@ const HomePage: React.FC = () => {
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Box>
                     <Typography color="text.secondary" variant="body2">
-                      Clienti
+                      {t('home.stats.customers')}
                     </Typography>
                     <Typography variant="h4" fontWeight={600}>
                       {stats.totalCustomers}
@@ -190,7 +192,7 @@ const HomePage: React.FC = () => {
 
       {/* Quick Links */}
       <Typography variant="h6" sx={{ mb: 2 }}>
-        Accesso Rapido
+        {t('home.quickAccess')}
       </Typography>
       <Grid container spacing={3}>
         {quickLinks.map((link) => (

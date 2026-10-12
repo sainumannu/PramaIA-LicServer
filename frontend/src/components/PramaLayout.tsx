@@ -19,9 +19,17 @@ import HomeIcon from '@mui/icons-material/Home';
 import SettingsIcon from '@mui/icons-material/Settings';
 import KeyIcon from '@mui/icons-material/Key';
 import BusinessIcon from '@mui/icons-material/Business';
+import PaletteIcon from '@mui/icons-material/Palette';
+import { useTranslation } from 'react-i18next';
 import { authGuard, canAccessSettings } from '../services/authGuard';
 import { useThemeContext } from '../shared/ThemeProvider';
-import { ThemeName, themeOptions } from '../shared/theme';
+import { ThemeName, themeOptions, APP_COLOR } from '../shared/theme';
+import { LanguageSwitcher } from './LanguageSwitcher';
+
+// Colori fissi dell'header: non seguono il tema (stesso principio in
+// C:/PramaIA-HelpDesk/docs/UI_HEADER.md §1 — l'header resta scuro in Light/Dark/Blue).
+const HEADER_TEXT_SECONDARY = 'rgba(255,255,255,0.7)';
+const HEADER_SEPARATOR = 'rgba(255,255,255,0.4)';
 
 interface PramaLayoutProps {
   children: React.ReactNode;
@@ -32,6 +40,7 @@ interface PramaLayoutProps {
 export const PramaLayout: React.FC<PramaLayoutProps> = ({ children, pageTitle }) => {
   const user = authGuard.getCurrentUser();
   const { themeName, setThemeName } = useThemeContext();
+  const { t } = useTranslation();
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -39,19 +48,19 @@ export const PramaLayout: React.FC<PramaLayoutProps> = ({ children, pageTitle })
         position="sticky"
         elevation={0}
         sx={{
-          backgroundColor: 'rgba(26, 26, 46, 0.9)',
+          backgroundColor: 'rgba(26, 26, 46, 0.85)',
           backdropFilter: 'blur(12px)',
           borderBottom: '1px solid rgba(255,255,255,0.08)',
         }}
       >
         <Toolbar sx={{ gap: 1 }}>
           {/* Home */}
-          <Tooltip title="Home">
+          <Tooltip title={t('header.home')}>
             <IconButton
               component="a"
               href="/"
               size="small"
-              sx={{ color: 'text.secondary', mr: 0.5 }}
+              sx={{ color: APP_COLOR, mr: 0.5 }}
             >
               <HomeIcon fontSize="small" />
             </IconButton>
@@ -68,13 +77,13 @@ export const PramaLayout: React.FC<PramaLayoutProps> = ({ children, pageTitle })
               letterSpacing: '-0.5px',
             }}
           >
-            PramaIA Licensing Server
+            {t('header.appName')}
           </Typography>
 
           {/* Page title breadcrumb */}
           {pageTitle && (
             <>
-              <Typography variant="body2" color="text.secondary" sx={{ mx: 0.5 }}>
+              <Typography variant="body2" sx={{ color: HEADER_SEPARATOR, mx: 0.5 }}>
                 /
               </Typography>
               {/* Bianco fisso: l'header ha sfondo scuro in tutti i temi */}
@@ -91,24 +100,24 @@ export const PramaLayout: React.FC<PramaLayoutProps> = ({ children, pageTitle })
               href="/licenses"
               size="small"
               startIcon={<KeyIcon />}
-              sx={{ 
-                color: 'text.secondary',
-                '&:hover': { color: 'primary.main' },
+              sx={{
+                color: HEADER_TEXT_SECONDARY,
+                '&:hover': { color: APP_COLOR },
               }}
             >
-              Licenze
+              {t('header.nav.licenses')}
             </Button>
             <Button
               component="a"
               href="/customers"
               size="small"
               startIcon={<BusinessIcon />}
-              sx={{ 
-                color: 'text.secondary',
-                '&:hover': { color: 'primary.main' },
+              sx={{
+                color: HEADER_TEXT_SECONDARY,
+                '&:hover': { color: APP_COLOR },
               }}
             >
-              Clienti
+              {t('header.nav.customers')}
             </Button>
           </Box>
 
@@ -120,7 +129,7 @@ export const PramaLayout: React.FC<PramaLayoutProps> = ({ children, pageTitle })
               label={user.display_name || user.email}
               size="small"
               variant="outlined"
-              sx={{ color: '#fff', borderColor: 'rgba(255,255,255,0.2)', mr: 1 }}
+              sx={{ color: '#fff', borderColor: 'rgba(255,255,255,0.3)', height: 28, mr: 1 }}
             />
           )}
 
@@ -129,26 +138,55 @@ export const PramaLayout: React.FC<PramaLayoutProps> = ({ children, pageTitle })
             <Chip
               label="Admin"
               size="small"
-              color="primary"
-              sx={{ mr: 1, height: 20, fontSize: '0.65rem' }}
+              sx={{
+                backgroundColor: APP_COLOR,
+                color: '#1a1a2e',
+                fontWeight: 700,
+                height: 24,
+                fontSize: '0.7rem',
+                mr: 1,
+              }}
             />
           )}
 
+          {/* Settings (solo per App Admin / Tenant Admin / Global Admin) */}
+          {canAccessSettings() && (
+            <Tooltip title={t('header.settings')}>
+              <IconButton
+                component="a"
+                href="/settings"
+                size="small"
+                sx={{ color: HEADER_TEXT_SECONDARY, mr: 0.5 }}
+              >
+                <SettingsIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+
+          {/* Lingua */}
+          <LanguageSwitcher />
+
           <FormControl size="small" sx={{ minWidth: 120, mr: 2 }}>
             <InputLabel id="theme-select-label" sx={{ color: '#fff', '&.Mui-focused': { color: '#fff' } }}>
-              Theme
+              {t('header.theme')}
             </InputLabel>
             <Select
               labelId="theme-select-label"
               value={themeName}
-              label="Theme"
+              label={t('header.theme')}
               onChange={(event) => setThemeName(event.target.value as ThemeName)}
+              renderValue={(value) => (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <PaletteIcon sx={{ fontSize: 18, color: HEADER_TEXT_SECONDARY }} />
+                  {themeOptions.find((option) => option.value === value)?.label}
+                </Box>
+              )}
               sx={{
                 color: '#fff',
                 fontWeight: 500,
-                '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.6)' },
-                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#fff' },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#10b981' },
+                '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.4)' },
+                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.6)' },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: APP_COLOR },
                 '.MuiSvgIcon-root': { color: '#fff' },
               }}
             >
@@ -158,23 +196,12 @@ export const PramaLayout: React.FC<PramaLayoutProps> = ({ children, pageTitle })
             </Select>
           </FormControl>
 
-          {/* Settings (solo per App Admin / Tenant Admin / Global Admin) */}
-          {canAccessSettings() && (
-            <Tooltip title="Impostazioni">
-              <IconButton
-                component="a"
-                href="/settings"
-                size="small"
-                sx={{ color: 'text.secondary', mr: 0.5 }}
-              >
-                <SettingsIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          )}
-
           {/* Logout */}
-          <Tooltip title="Logout">
-            <IconButton onClick={() => authGuard.logout()} size="small" sx={{ color: 'text.secondary' }}>
+          <Tooltip title={t('header.logout')}>
+            <IconButton
+              onClick={() => authGuard.logout()}
+              sx={{ color: '#ef5350', '&:hover': { backgroundColor: 'rgba(239,68,68,0.1)' } }}
+            >
               <LogoutIcon fontSize="small" />
             </IconButton>
           </Tooltip>
@@ -195,7 +222,7 @@ export const PramaLayout: React.FC<PramaLayoutProps> = ({ children, pageTitle })
         }}
       >
         <Typography variant="caption" color="text.secondary">
-          PramaIA Licensing Server · PramaIA Platform © {new Date().getFullYear()}
+          {t('header.footer', { year: new Date().getFullYear() })}
         </Typography>
       </Box>
     </Box>

@@ -10,6 +10,7 @@ import {
 import SettingsIcon from '@mui/icons-material/Settings';
 import PeopleIcon from '@mui/icons-material/People';
 import TuneIcon from '@mui/icons-material/Tune';
+import { useTranslation } from 'react-i18next';
 import { PramaLayout } from '../components/PramaLayout';
 import { UsersPanel } from '../components/UsersPanel';
 import { canAccessSettings } from '../services/authGuard';
@@ -30,6 +31,7 @@ function TabPanel({ children, value, index }: TabPanelProps) {
 }
 
 export const SettingsPage: React.FC = () => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState(0);
 
   // Verifica accesso
@@ -38,18 +40,18 @@ export const SettingsPage: React.FC = () => {
   }
 
   return (
-    <PramaLayout pageTitle="Impostazioni">
+    <PramaLayout pageTitle={t('settings.pageTitle')}>
       <Container maxWidth="lg">
         {/* Header */}
         <Box sx={{ mb: 3 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
             <SettingsIcon sx={{ fontSize: 28, color: 'primary.main' }} />
             <Typography variant="h4" sx={{ fontWeight: 600 }}>
-              Impostazioni
+              {t('settings.title')}
             </Typography>
           </Box>
           <Typography variant="body2" color="text.secondary">
-            Configura le impostazioni dell'applicazione PramaIA Licensing Server
+            {t('settings.subtitle')}
           </Typography>
         </Box>
 
@@ -73,12 +75,12 @@ export const SettingsPage: React.FC = () => {
             <Tab
               icon={<PeopleIcon fontSize="small" />}
               iconPosition="start"
-              label="Utenti"
+              label={t('settings.tabs.users')}
             />
             <Tab
               icon={<TuneIcon fontSize="small" />}
               iconPosition="start"
-              label="Configurazione"
+              label={t('settings.tabs.config')}
             />
           </Tabs>
 
@@ -91,13 +93,13 @@ export const SettingsPage: React.FC = () => {
           <TabPanel value={activeTab} index={1}>
             <Box sx={{ p: 3, textAlign: 'center' }}>
               <Typography variant="h6" color="text.secondary" gutterBottom>
-                Configurazione Applicazione
+                {t('settings.configPlaceholder.title')}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Aggiungi qui le configurazioni specifiche dell'applicazione.
+                {t('settings.configPlaceholder.body')}
               </Typography>
               <Typography variant="caption" color="text.disabled" sx={{ mt: 2, display: 'block' }}>
-                Questo pannello è un placeholder — personalizzalo in base alle esigenze dell'app.
+                {t('settings.configPlaceholder.note')}
               </Typography>
             </Box>
           </TabPanel>

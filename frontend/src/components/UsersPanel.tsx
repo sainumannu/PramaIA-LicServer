@@ -25,15 +25,18 @@ import SearchIcon from '@mui/icons-material/Search';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
+import { useTranslation } from 'react-i18next';
 import { apiClient } from '../services/apiClient';
 import { authGuard } from '../services/authGuard';
 
-// Ruoli specifici dell'applicazione (personalizzabili dallo sviluppatore)
-const APP_ROLES = [
-  { value: 'user', label: 'Utente', color: 'default' as const },
-  { value: 'operator', label: 'Operatore', color: 'primary' as const },
-  { value: 'admin', label: 'Admin', color: 'error' as const },
-];
+// Ruoli specifici dell'applicazione (personalizzabili dallo sviluppatore); le etichette sono tradotte
+// a runtime (vedi useAppRoles sotto) perché qui serve anche il colore, non solo la label.
+const APP_ROLE_VALUES = ['user', 'operator', 'admin'] as const;
+const APP_ROLE_COLORS: Record<typeof APP_ROLE_VALUES[number], 'default' | 'primary' | 'error'> = {
+  user: 'default',
+  operator: 'primary',
+  admin: 'error',
+};
 
 interface AppUser {
   id: string;
@@ -56,8 +59,15 @@ interface AppTeamMember {
 }
 
 export const UsersPanel: React.FC = () => {
+  const { t } = useTranslation();
   const currentUser = authGuard.getCurrentUser();
-  
+
+  const APP_ROLES = APP_ROLE_VALUES.map((value) => ({
+    value,
+    label: t(`users.roles.${value}`),
+    color: APP_ROLE_COLORS[value],
+  }));
+
   // State per utenti disponibili (dal Portal)
   const [availableUsers, setAvailableUsers] = useState<AppUser[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
@@ -99,7 +109,7 @@ export const UsersPanel: React.FC = () => {
       setAvailableUsers(users || []);
     } catch (error: any) {
       console.error('Errore caricamento utenti:', error);
-      setUsersError(error.message || 'Impossibile caricare gli utenti');
+      setUsersError(error.message || t('users.loadError'));
       setAvailableUsers([]);
     } finally {
       setLoadingUsers(false);
@@ -131,7 +141,7 @@ export const UsersPanel: React.FC = () => {
       setUsersError(null);
     } catch (error: any) {
       console.error('Errore aggiunta membro:', error);
-      setUsersError(error.message || 'Impossibile aggiungere utente al team');
+      setUsersError(error.message || t('users.addError'));
     }
   };
 
@@ -141,7 +151,7 @@ export const UsersPanel: React.FC = () => {
       await loadTeamMembers();
     } catch (error: any) {
       console.error('Errore rimozione membro:', error);
-      setUsersError(error.message || 'Impossibile rimuovere utente');
+      setUsersError(error.message || t('users.removeError'));
     }
   };
 
@@ -170,9 +180,9 @@ export const UsersPanel: React.FC = () => {
       <Box sx={{ mb: 4 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
           <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            Team Applicazione ({teamMembers.filter((m) => m.is_active).length})
+            {t('users.team.title', { count: teamMembers.filter((m) => m.is_active).length })}
           </Typography>
-          <Tooltip title="Ricarica">
+          <Tooltip title={t('users.team.reload')}>
             <IconButton size="small" onClick={loadData} disabled={loadingUsers || loadingTeam}>
               <RefreshIcon fontSize="small" />
             </IconButton>
@@ -185,18 +195,18 @@ export const UsersPanel: React.FC = () => {
           </Box>
         ) : teamMembers.filter((m) => m.is_active).length === 0 ? (
           <Alert severity="info" sx={{ mb: 2 }}>
-            Nessun utente nel team. Aggiungi utenti dalla lista sottostante.
+            {t('users.team.empty')}
           </Alert>
         ) : (
           <TableContainer component={Paper} variant="outlined">
             <Table size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 600 }}>Utente</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Ruolo App</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t('users.team.table.user')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t('users.team.table.email')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t('users.team.table.appRole')}</TableCell>
                   <TableCell align="right" sx={{ fontWeight: 600, width: 80 }}>
-                    Azioni
+                    {t('users.team.table.actions')}
                   </TableCell>
                 </TableRow>
               </TableHead>
@@ -224,7 +234,7 @@ export const UsersPanel: React.FC = () => {
                         />
                       </TableCell>
                       <TableCell align="right">
-                        <Tooltip title="Rimuovi dal team">
+                        <Tooltip title={t('users.team.removeTooltip')}>
                           <IconButton
                             size="small"
                             color="error"
@@ -244,7 +254,7 @@ export const UsersPanel: React.FC = () => {
 
       {standaloneNotice && (
         <Alert severity="info" sx={{ mb: 3 }}>
-          Elenco utenti non disponibile in modalità standalone: richiede l'accesso tramite PramaIA Portal.
+          {t('users.standaloneNotice')}
         </Alert>
       )}
 
@@ -259,11 +269,11 @@ export const UsersPanel: React.FC = () => {
       <Box>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
           <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            Utenti Disponibili
+            {t('users.available.title')}
           </Typography>
           <TextField
             size="small"
-            placeholder="Cerca per nome o email..."
+            placeholder={t('users.available.search')}
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
@@ -281,7 +291,7 @@ export const UsersPanel: React.FC = () => {
         </Box>
 
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Utenti autorizzati a questa app nel Portal. Seleziona un ruolo e clicca + per aggiungerli al team.
+          {t('users.available.subtitle')}
         </Typography>
 
         {loadingUsers ? (
@@ -290,7 +300,7 @@ export const UsersPanel: React.FC = () => {
           </Box>
         ) : filteredUsers.length === 0 ? (
           <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
-            {searchTerm ? `Nessun utente trovato per "${searchTerm}"` : 'Nessun utente disponibile'}
+            {searchTerm ? t('users.available.noneForSearch', { term: searchTerm }) : t('users.available.noneAvailable')}
           </Typography>
         ) : (
           <>
@@ -298,12 +308,12 @@ export const UsersPanel: React.FC = () => {
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{ fontWeight: 600 }}>Utente</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Ruoli Portal</TableCell>
-                    <TableCell sx={{ fontWeight: 600, width: 150 }}>Ruolo App</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>{t('users.available.table.user')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>{t('users.available.table.email')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>{t('users.available.table.portalRoles')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, width: 150 }}>{t('users.available.table.appRole')}</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 600, width: 80 }}>
-                      Azioni
+                      {t('users.available.table.actions')}
                     </TableCell>
                   </TableRow>
                 </TableHead>
@@ -341,7 +351,7 @@ export const UsersPanel: React.FC = () => {
                         </TableCell>
                         <TableCell>
                           {isInTeam ? (
-                            <Chip label="Nel team" size="small" color="success" sx={{ height: 22 }} />
+                            <Chip label={t('users.available.inTeam')} size="small" color="success" sx={{ height: 22 }} />
                           ) : (
                             <FormControl size="small" fullWidth>
                               <Select
@@ -356,7 +366,7 @@ export const UsersPanel: React.FC = () => {
                                 sx={{ fontSize: '0.85rem' }}
                               >
                                 <MenuItem value="" disabled>
-                                  <em>Seleziona...</em>
+                                  <em>{t('users.available.selectPlaceholder')}</em>
                                 </MenuItem>
                                 {APP_ROLES.map((role) => (
                                   <MenuItem key={role.value} value={role.value}>
@@ -369,7 +379,7 @@ export const UsersPanel: React.FC = () => {
                         </TableCell>
                         <TableCell align="right">
                           {!isInTeam && (
-                            <Tooltip title="Aggiungi al team">
+                            <Tooltip title={t('users.available.addTooltip')}>
                               <span>
                                 <IconButton
                                   size="small"
@@ -401,7 +411,7 @@ export const UsersPanel: React.FC = () => {
                 setPage(0);
               }}
               rowsPerPageOptions={[5, 10, 25]}
-              labelRowsPerPage="Righe per pagina"
+              labelRowsPerPage={t('users.available.rowsPerPage')}
             />
           </>
         )}

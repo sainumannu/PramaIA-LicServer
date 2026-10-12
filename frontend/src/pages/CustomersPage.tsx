@@ -12,6 +12,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import BusinessIcon from '@mui/icons-material/Business';
+import { useTranslation, Trans } from 'react-i18next';
 import { PramaLayout } from '../components/PramaLayout';
 import { apiClient } from '../services/apiClient';
 import { authGuard } from '../services/authGuard';
@@ -45,6 +46,7 @@ interface CustomerListResponse {
 }
 
 const CustomersPage: React.FC = () => {
+  const { t } = useTranslation();
   const user = authGuard.getCurrentUser();
   const isAdmin = user?.is_admin;
   
@@ -163,11 +165,11 @@ const CustomersPage: React.FC = () => {
           sdi_code: formData.sdi_code || null,
           notes: formData.notes || null,
         });
-        setSuccess('Cliente aggiornato con successo');
+        setSuccess(t('customers.savedSuccess'));
       } else {
         // Create
         await apiClient.post('/api/customers/', formData);
-        setSuccess('Cliente creato con successo');
+        setSuccess(t('customers.createdSuccess'));
       }
       setDialogOpen(false);
       loadCustomers();
@@ -180,7 +182,7 @@ const CustomersPage: React.FC = () => {
     if (!customerToDelete) return;
     try {
       await apiClient.delete(`/api/customers/${customerToDelete.customer_id}`);
-      setSuccess('Cliente eliminato con successo');
+      setSuccess(t('customers.deletedSuccess'));
       setDeleteDialogOpen(false);
       setCustomerToDelete(null);
       loadCustomers();
@@ -195,7 +197,7 @@ const CustomersPage: React.FC = () => {
   };
 
   return (
-    <PramaLayout pageTitle="Gestione Clienti">
+    <PramaLayout pageTitle={t('customers.pageTitle')}>
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
           {error}
@@ -210,7 +212,7 @@ const CustomersPage: React.FC = () => {
       {/* Toolbar */}
       <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap', alignItems: 'center' }}>
         <TextField
-          placeholder="Cerca per nome, P.IVA/CF, email..."
+          placeholder={t('customers.toolbar.search')}
           size="small"
           value={search}
           onChange={(e) => {
@@ -238,7 +240,7 @@ const CustomersPage: React.FC = () => {
               size="small"
             />
           }
-          label="Mostra inattivi"
+          label={t('customers.toolbar.showInactive')}
         />
         
         <Box sx={{ flex: 1 }} />
@@ -248,7 +250,7 @@ const CustomersPage: React.FC = () => {
           startIcon={<RefreshIcon />}
           onClick={() => loadCustomers()}
         >
-          Aggiorna
+          {t('common.refresh')}
         </Button>
         
         <Button
@@ -256,7 +258,7 @@ const CustomersPage: React.FC = () => {
           startIcon={<AddIcon />}
           onClick={handleOpenCreate}
         >
-          Nuovo Cliente
+          {t('customers.toolbar.newCustomer')}
         </Button>
       </Box>
 
@@ -265,14 +267,14 @@ const CustomersPage: React.FC = () => {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>ID Cliente</TableCell>
-              <TableCell>Ragione Sociale</TableCell>
-              <TableCell>P.IVA / CF</TableCell>
-              <TableCell>Email</TableCell>
-              <TableCell>Città</TableCell>
-              <TableCell>SDI</TableCell>
-              <TableCell>Stato</TableCell>
-              <TableCell align="right">Azioni</TableCell>
+              <TableCell>{t('customers.table.customerId')}</TableCell>
+              <TableCell>{t('customers.table.companyName')}</TableCell>
+              <TableCell>{t('customers.table.vatOrCf')}</TableCell>
+              <TableCell>{t('customers.table.email')}</TableCell>
+              <TableCell>{t('customers.table.city')}</TableCell>
+              <TableCell>{t('customers.table.sdi')}</TableCell>
+              <TableCell>{t('customers.table.status')}</TableCell>
+              <TableCell align="right">{t('customers.table.actions')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -286,7 +288,7 @@ const CustomersPage: React.FC = () => {
               <TableRow>
                 <TableCell component="td" {...{ colSpan: 8 }} align="center" sx={{ py: 4 }}>
                   <BusinessIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
-                  <Typography color="text.secondary">Nessun cliente trovato</Typography>
+                  <Typography color="text.secondary">{t('customers.table.empty')}</Typography>
                 </TableCell>
               </TableRow>
             ) : (
@@ -306,19 +308,19 @@ const CustomersPage: React.FC = () => {
                   <TableCell>{customer.sdi_code || '-'}</TableCell>
                   <TableCell>
                     <Chip
-                      label={customer.is_active ? 'Attivo' : 'Inattivo'}
+                      label={customer.is_active ? t('customers.table.active') : t('customers.table.inactive')}
                       size="small"
                       color={customer.is_active ? 'success' : 'default'}
                     />
                   </TableCell>
                   <TableCell align="right">
-                    <Tooltip title="Modifica">
+                    <Tooltip title={t('customers.table.edit')}>
                       <IconButton size="small" onClick={() => handleOpenEdit(customer)}>
                         <EditIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
                     {isAdmin && (
-                      <Tooltip title="Elimina">
+                      <Tooltip title={t('customers.table.delete')}>
                         <IconButton
                           size="small"
                           onClick={() => {
@@ -346,24 +348,24 @@ const CustomersPage: React.FC = () => {
             setRowsPerPage(parseInt(e.target.value, 10));
             setPage(0);
           }}
-          labelRowsPerPage="Righe per pagina:"
+          labelRowsPerPage={t('customers.table.rowsPerPage')}
         />
       </TableContainer>
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>
-          {editingCustomer ? 'Modifica Cliente' : 'Nuovo Cliente'}
+          {editingCustomer ? t('customers.dialog.editTitle') : t('customers.dialog.createTitle')}
         </DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
             {/* Dati principali */}
             <Grid item xs={12}>
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>Dati Principali</Typography>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>{t('customers.dialog.mainDataSection')}</Typography>
             </Grid>
             <Grid item xs={12} md={8}>
               <TextField
-                label="Ragione Sociale / Nome"
+                label={t('customers.dialog.companyOrName')}
                 fullWidth
                 size="small"
                 value={formData.name}
@@ -373,24 +375,24 @@ const CustomersPage: React.FC = () => {
             </Grid>
             <Grid item xs={12} md={4}>
               <TextField
-                label="P.IVA / Codice Fiscale"
+                label={t('customers.dialog.vatOrCf')}
                 fullWidth
                 size="small"
                 value={formData.vat_or_cf}
                 onChange={(e) => setFormData({ ...formData, vat_or_cf: e.target.value })}
                 required
                 disabled={!!editingCustomer}
-                helperText={editingCustomer ? 'Non modificabile' : ''}
+                helperText={editingCustomer ? t('customers.dialog.notEditable') : ''}
               />
             </Grid>
             
             {/* Contatti */}
             <Grid item xs={12}>
-              <Typography variant="subtitle2" sx={{ mb: 1, mt: 2 }}>Contatti</Typography>
+              <Typography variant="subtitle2" sx={{ mb: 1, mt: 2 }}>{t('customers.dialog.contactsSection')}</Typography>
             </Grid>
             <Grid item xs={12} md={4}>
               <TextField
-                label="Email"
+                label={t('customers.dialog.email')}
                 type="email"
                 fullWidth
                 size="small"
@@ -400,7 +402,7 @@ const CustomersPage: React.FC = () => {
             </Grid>
             <Grid item xs={12} md={4}>
               <TextField
-                label="Telefono"
+                label={t('customers.dialog.phone')}
                 fullWidth
                 size="small"
                 value={formData.phone}
@@ -409,7 +411,7 @@ const CustomersPage: React.FC = () => {
             </Grid>
             <Grid item xs={12} md={4}>
               <TextField
-                label="PEC"
+                label={t('customers.dialog.pec')}
                 type="email"
                 fullWidth
                 size="small"
@@ -420,11 +422,11 @@ const CustomersPage: React.FC = () => {
             
             {/* Indirizzo */}
             <Grid item xs={12}>
-              <Typography variant="subtitle2" sx={{ mb: 1, mt: 2 }}>Indirizzo</Typography>
+              <Typography variant="subtitle2" sx={{ mb: 1, mt: 2 }}>{t('customers.dialog.addressSection')}</Typography>
             </Grid>
             <Grid item xs={12}>
               <TextField
-                label="Indirizzo"
+                label={t('customers.dialog.address')}
                 fullWidth
                 size="small"
                 value={formData.address}
@@ -433,7 +435,7 @@ const CustomersPage: React.FC = () => {
             </Grid>
             <Grid item xs={12} md={4}>
               <TextField
-                label="Città"
+                label={t('customers.dialog.city')}
                 fullWidth
                 size="small"
                 value={formData.city}
@@ -442,7 +444,7 @@ const CustomersPage: React.FC = () => {
             </Grid>
             <Grid item xs={6} md={2}>
               <TextField
-                label="Provincia"
+                label={t('customers.dialog.province')}
                 fullWidth
                 size="small"
                 value={formData.province}
@@ -452,7 +454,7 @@ const CustomersPage: React.FC = () => {
             </Grid>
             <Grid item xs={6} md={3}>
               <TextField
-                label="CAP"
+                label={t('customers.dialog.postalCode')}
                 fullWidth
                 size="small"
                 value={formData.postal_code}
@@ -461,7 +463,7 @@ const CustomersPage: React.FC = () => {
             </Grid>
             <Grid item xs={12} md={3}>
               <TextField
-                label="Paese"
+                label={t('customers.dialog.country')}
                 fullWidth
                 size="small"
                 value={formData.country}
@@ -471,27 +473,27 @@ const CustomersPage: React.FC = () => {
             
             {/* Fatturazione */}
             <Grid item xs={12}>
-              <Typography variant="subtitle2" sx={{ mb: 1, mt: 2 }}>Fatturazione Elettronica</Typography>
+              <Typography variant="subtitle2" sx={{ mb: 1, mt: 2 }}>{t('customers.dialog.billingSection')}</Typography>
             </Grid>
             <Grid item xs={12} md={4}>
               <TextField
-                label="Codice SDI"
+                label={t('customers.dialog.sdiCode')}
                 fullWidth
                 size="small"
                 value={formData.sdi_code}
                 onChange={(e) => setFormData({ ...formData, sdi_code: e.target.value })}
                 inputProps={{ maxLength: 7 }}
-                helperText="Codice Destinatario (7 caratteri)"
+                helperText={t('customers.dialog.sdiHelper')}
               />
             </Grid>
             
             {/* Note */}
             <Grid item xs={12}>
-              <Typography variant="subtitle2" sx={{ mb: 1, mt: 2 }}>Note</Typography>
+              <Typography variant="subtitle2" sx={{ mb: 1, mt: 2 }}>{t('customers.dialog.notesSection')}</Typography>
             </Grid>
             <Grid item xs={12}>
               <TextField
-                label="Note"
+                label={t('customers.dialog.notes')}
                 fullWidth
                 size="small"
                 multiline
@@ -503,32 +505,36 @@ const CustomersPage: React.FC = () => {
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogOpen(false)}>Annulla</Button>
+          <Button onClick={() => setDialogOpen(false)}>{t('common.cancel')}</Button>
           <Button
             variant="contained"
             onClick={handleSave}
             disabled={!formData.name || !formData.vat_or_cf}
           >
-            {editingCustomer ? 'Salva Modifiche' : 'Crea Cliente'}
+            {editingCustomer ? t('customers.dialog.saveChanges') : t('customers.dialog.createCustomer')}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-        <DialogTitle>Conferma Eliminazione</DialogTitle>
+        <DialogTitle>{t('customers.deleteDialog.title')}</DialogTitle>
         <DialogContent>
           <Typography>
-            Sei sicuro di voler eliminare il cliente <strong>{customerToDelete?.name}</strong>?
+            <Trans
+              i18nKey="customers.deleteDialog.confirm"
+              values={{ name: customerToDelete?.name }}
+              components={{ strong: <strong /> }}
+            />
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Il cliente verrà disattivato e non sarà più visibile nell'elenco.
+            {t('customers.deleteDialog.note')}
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Annulla</Button>
+          <Button onClick={() => setDeleteDialogOpen(false)}>{t('common.cancel')}</Button>
           <Button variant="contained" color="error" onClick={handleDelete}>
-            Elimina
+            {t('customers.deleteDialog.delete')}
           </Button>
         </DialogActions>
       </Dialog>

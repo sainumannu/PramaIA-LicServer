@@ -1,0 +1,294 @@
+{
+  "header": {
+    "appName": "PramaIA Licensing Server",
+    "home": "Home",
+    "settings": "Impostazioni",
+    "logout": "Logout",
+    "nav": {
+      "licenses": "Licenze",
+      "customers": "Clienti"
+    },
+    "theme": "Theme",
+    "footer": "PramaIA Licensing Server · PramaIA Platform © {{year}}"
+  },
+  "language": {
+    "tooltip": "Lingua: {{name}}",
+    "it": "Italiano",
+    "en": "English"
+  },
+  "common": {
+    "cancel": "Annulla",
+    "close": "Chiudi",
+    "refresh": "Aggiorna",
+    "actions": "Azioni",
+    "status": "Stato",
+    "all": "Tutti"
+  },
+  "home": {
+    "pageTitle": "Dashboard",
+    "welcome": "Benvenuto, {{name}}",
+    "defaultUser": "Utente",
+    "subtitle": "Sistema di gestione licenze PramaIA",
+    "stats": {
+      "totalLicenses": "Licenze Totali",
+      "activeLicenses": "Licenze Attive",
+      "expiringLicenses": "In Scadenza (30gg)",
+      "expiringWarning": "Attenzione",
+      "customers": "Clienti"
+    },
+    "quickAccess": "Accesso Rapido",
+    "links": {
+      "licensesTitle": "Gestione Licenze",
+      "licensesDescription": "Crea, visualizza e gestisci le licenze software",
+      "customersTitle": "Gestione Clienti",
+      "customersDescription": "Anagrafica clienti e informazioni di contatto",
+      "verifyTitle": "Verifica Licenze",
+      "verifyDescription": "Verifica l'autenticità dei file di licenza firmati"
+    }
+  },
+  "licenses": {
+    "pageTitle": "Gestione Licenze",
+    "createdSuccess": "Licenza creata con successo",
+    "downloadedSuccess": "File licenza {{id}} scaricato",
+    "deletedSuccess": "Licenza {{id}} eliminata",
+    "confirmDelete": "Sei sicuro di voler eliminare definitivamente la licenza {{id}}? Questa operazione è irreversibile.",
+    "appsConfigError": "Impossibile caricare l'elenco delle applicazioni dal server.",
+    "retry": "Riprova",
+    "tabs": {
+      "list": "Elenco Licenze",
+      "verify": "Verifica File",
+      "requests": "Richieste Attivazione"
+    },
+    "toolbar": {
+      "search": "Cerca per ID, cliente, P.IVA...",
+      "statusLabel": "Stato",
+      "statusActive": "Attiva",
+      "statusPending": "In attesa",
+      "statusExpired": "Scaduta",
+      "statusRevoked": "Revocata",
+      "statusSuspended": "Sospesa",
+      "newLicense": "Nuova Licenza"
+    },
+    "table": {
+      "licenseId": "ID Licenza",
+      "customer": "Cliente",
+      "vatOrCf": "P.IVA/CF",
+      "modules": "Moduli",
+      "usersInstances": "Utenti/Istanze",
+      "expiry": "Scadenza",
+      "status": "Stato",
+      "actions": "Azioni",
+      "empty": "Nessuna licenza trovata",
+      "rowsPerPage": "Righe per pagina:",
+      "view": "Visualizza",
+      "downloadSigned": "Scarica file firmato",
+      "delete": "Elimina licenza"
+    },
+    "verify": {
+      "title": "Verifica File Licenza",
+      "subtitle": "Carica un file .lic.json per verificare l'autenticità della firma digitale.",
+      "selectFile": "Seleziona File",
+      "verifyButton": "Verifica Firma",
+      "errorGeneric": "Errore durante la verifica",
+      "valid": "Firma Valida",
+      "invalid": "Firma Non Valida",
+      "id": "ID:",
+      "customer": "Cliente:",
+      "expiry": "Scadenza:"
+    },
+    "requests": {
+      "title": "Richieste di Attivazione",
+      "subtitle": "Importa il file generato dal Portal: crea una richiesta per ogni app, con il relativo catalogo moduli.",
+      "importButton": "Importa Richiesta",
+      "reload": "Ricarica",
+      "invalidJson": "Il file non è un JSON valido",
+      "importFailed": "Importazione non riuscita",
+      "loadFailed": "Impossibile caricare le richieste di attivazione",
+      "table": {
+        "date": "Data",
+        "customer": "Cliente",
+        "app": "App",
+        "requestedModules": "Moduli Richiesti",
+        "maxUsers": "Max Utenti",
+        "status": "Stato",
+        "actions": "Azioni",
+        "noneSpecified": "Nessuno specificato",
+        "empty": "Nessuna richiesta di attivazione"
+      },
+      "useForNewLicense": "Usa per nuova licenza"
+    },
+    "create": {
+      "title": "Crea Nuova Licenza",
+      "customerSection": "Cliente",
+      "selectExistingCustomer": "Seleziona Cliente Esistente",
+      "orEnterManually": "Oppure inserisci manualmente:",
+      "customerName": "Nome Cliente",
+      "vatOrCf": "P.IVA / Codice Fiscale",
+      "modulesAndLimitsSection": "Moduli e Limiti",
+      "enabledModules": "Moduli Abilitati",
+      "maxUsers": "Max Utenti",
+      "maxInstances": "Max Istanze",
+      "deploymentType": "Tipo Deployment",
+      "deploymentOnPrem": "On-Premise",
+      "deploymentCloud": "Cloud",
+      "deploymentHybrid": "Hybrid",
+      "fingerprint": "Fingerprint Ambiente",
+      "fingerprintPlaceholder": "Hash fornito dal cliente (opzionale)",
+      "fingerprintHelper": "Se specificato, la licenza sarà valida solo per questo ambiente",
+      "validitySection": "Validità",
+      "expiresAt": "Data Scadenza",
+      "maintenanceUntil": "Fine Manutenzione",
+      "multiAppToggleTitle": "Modalità Multi-App",
+      "multiAppToggleSubtitle": "Configura limiti separati per ciascuna applicazione e ruolo utente",
+      "globalLimitsSection": "Limiti Globali",
+      "globalLimitsHelper": "Usa -1 per illimitato",
+      "totalUsers": "Tot. Utenti",
+      "totalInstances": "Tot. Istanze",
+      "totalApps": "Tot. App",
+      "applicationsSection": "Applicazioni",
+      "addApp": "Aggiungi App",
+      "appEnabled": "Abilitata",
+      "userLimitsPerRole": "Limiti Utenti per Ruolo",
+      "roleAdmin": "Admin",
+      "roleStandard": "Standard",
+      "roleViewer": "Viewer",
+      "unlimitedHelper": "-1 = illim.",
+      "appModules": "Moduli",
+      "createButton": "Crea Licenza"
+    },
+    "view": {
+      "title": "Dettagli Licenza",
+      "customer": "Cliente",
+      "modules": "Moduli",
+      "limits": "Limiti",
+      "maxUsersInstances": "Max Utenti: {{users}} | Max Istanze: {{instances}}",
+      "deployment": "Deployment",
+      "fingerprint": "Fingerprint: {{fingerprint}}",
+      "validity": "Validità",
+      "issued": "Emessa: {{date}}",
+      "expires": "Scadenza: {{date}}",
+      "maintenanceUntil": "Manutenzione fino a: {{date}}",
+      "multiAppEntitlements": "Entitlement Multi-App",
+      "disabled": "Disabilitata",
+      "appUsers": "Utenti: Admin {{admin}} | Standard {{standard}} | Viewer {{viewer}}",
+      "appInstancesModules": "Istanze: {{instances}} | Moduli: {{modules}}",
+      "allModules": "tutti",
+      "globalLimitsSection": "Limiti Globali",
+      "globalLimitsLine": "Tot. Utenti: {{users}} | Tot. Istanze: {{instances}} | Tot. App: {{apps}}",
+      "downloadSigned": "Scarica File Firmato"
+    }
+  },
+  "customers": {
+    "pageTitle": "Gestione Clienti",
+    "savedSuccess": "Cliente aggiornato con successo",
+    "createdSuccess": "Cliente creato con successo",
+    "deletedSuccess": "Cliente eliminato con successo",
+    "toolbar": {
+      "search": "Cerca per nome, P.IVA/CF, email...",
+      "showInactive": "Mostra inattivi",
+      "newCustomer": "Nuovo Cliente"
+    },
+    "table": {
+      "customerId": "ID Cliente",
+      "companyName": "Ragione Sociale",
+      "vatOrCf": "P.IVA / CF",
+      "email": "Email",
+      "city": "Città",
+      "sdi": "SDI",
+      "status": "Stato",
+      "actions": "Azioni",
+      "active": "Attivo",
+      "inactive": "Inattivo",
+      "empty": "Nessun cliente trovato",
+      "rowsPerPage": "Righe per pagina:",
+      "edit": "Modifica",
+      "delete": "Elimina"
+    },
+    "dialog": {
+      "editTitle": "Modifica Cliente",
+      "createTitle": "Nuovo Cliente",
+      "mainDataSection": "Dati Principali",
+      "companyOrName": "Ragione Sociale / Nome",
+      "vatOrCf": "P.IVA / Codice Fiscale",
+      "notEditable": "Non modificabile",
+      "contactsSection": "Contatti",
+      "email": "Email",
+      "phone": "Telefono",
+      "pec": "PEC",
+      "addressSection": "Indirizzo",
+      "address": "Indirizzo",
+      "city": "Città",
+      "province": "Provincia",
+      "postalCode": "CAP",
+      "country": "Paese",
+      "billingSection": "Fatturazione Elettronica",
+      "sdiCode": "Codice SDI",
+      "sdiHelper": "Codice Destinatario (7 caratteri)",
+      "notesSection": "Note",
+      "notes": "Note",
+      "saveChanges": "Salva Modifiche",
+      "createCustomer": "Crea Cliente"
+    },
+    "deleteDialog": {
+      "title": "Conferma Eliminazione",
+      "confirm": "Sei sicuro di voler eliminare il cliente <strong>{{name}}</strong>?",
+      "note": "Il cliente verrà disattivato e non sarà più visibile nell'elenco.",
+      "delete": "Elimina"
+    }
+  },
+  "settings": {
+    "pageTitle": "Impostazioni",
+    "title": "Impostazioni",
+    "subtitle": "Configura le impostazioni dell'applicazione PramaIA Licensing Server",
+    "tabs": {
+      "users": "Utenti",
+      "config": "Configurazione"
+    },
+    "configPlaceholder": {
+      "title": "Configurazione Applicazione",
+      "body": "Aggiungi qui le configurazioni specifiche dell'applicazione.",
+      "note": "Questo pannello è un placeholder — personalizzalo in base alle esigenze dell'app."
+    }
+  },
+  "users": {
+    "roles": {
+      "user": "Utente",
+      "operator": "Operatore",
+      "admin": "Admin"
+    },
+    "team": {
+      "title": "Team Applicazione ({{count}})",
+      "reload": "Ricarica",
+      "empty": "Nessun utente nel team. Aggiungi utenti dalla lista sottostante.",
+      "table": {
+        "user": "Utente",
+        "email": "Email",
+        "appRole": "Ruolo App",
+        "actions": "Azioni"
+      },
+      "removeTooltip": "Rimuovi dal team"
+    },
+    "standaloneNotice": "Elenco utenti non disponibile in modalità standalone: richiede l'accesso tramite PramaIA Portal.",
+    "loadError": "Impossibile caricare gli utenti",
+    "addError": "Impossibile aggiungere utente al team",
+    "removeError": "Impossibile rimuovere utente",
+    "available": {
+      "title": "Utenti Disponibili",
+      "search": "Cerca per nome o email...",
+      "subtitle": "Utenti autorizzati a questa app nel Portal. Seleziona un ruolo e clicca + per aggiungerli al team.",
+      "noneForSearch": "Nessun utente trovato per \"{{term}}\"",
+      "noneAvailable": "Nessun utente disponibile",
+      "table": {
+        "user": "Utente",
+        "email": "Email",
+        "portalRoles": "Ruoli Portal",
+        "appRole": "Ruolo App",
+        "actions": "Azioni"
+      },
+      "selectPlaceholder": "Seleziona...",
+      "inTeam": "Nel team",
+      "addTooltip": "Aggiungi al team",
+      "rowsPerPage": "Righe per pagina"
+    }
+  }
+}

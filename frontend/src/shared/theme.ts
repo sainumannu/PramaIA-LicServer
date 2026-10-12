@@ -1,7 +1,9 @@
 import { createTheme } from '@mui/material/styles';
 
 // Colore principale dell'app — configurabile in cookiecutter.json (app_color)
-const APP_COLOR = '#10b981';
+// Esportato: usato anche nell'header (PramaLayout), che ha colori fissi e non segue il tema
+// (vedi C:/PramaIA-HelpDesk/docs/UI_HEADER.md).
+export const APP_COLOR = '#10b981';
 const APP_STORAGE_PREFIX = 'pramaia-licserver';
 
 export type ThemeName = 'light' | 'dark' | 'blue';

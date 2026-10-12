@@ -17,6 +17,7 @@ import BlockIcon from '@mui/icons-material/Block';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DeleteIcon from '@mui/icons-material/Delete';
+import { useTranslation } from 'react-i18next';
 import { PramaLayout } from '../components/PramaLayout';
 import { apiClient } from '../services/apiClient';
 import { authGuard } from '../services/authGuard';
@@ -175,6 +176,7 @@ interface AppsConfigResponse {
 }
 
 const LicensesPage: React.FC = () => {
+  const { t } = useTranslation();
   const user = authGuard.getCurrentUser();
   const isAdmin = user?.is_admin;
   
@@ -256,7 +258,7 @@ const LicensesPage: React.FC = () => {
       console.error('Failed to load apps config:', err);
       // Nessuna app inventata: una licenza firmata per un'app inesistente sarebbe un danno silenzioso.
       setAvailableApps([]);
-      setAppsError('Impossibile caricare l\'elenco delle applicazioni dal server.');
+      setAppsError(t('licenses.appsConfigError'));
       setModulesOptions(['chat', 'documents', 'analysis']);
     } finally {
       setAppsLoading(false);
@@ -314,7 +316,7 @@ const LicensesPage: React.FC = () => {
       setActivationRequests(data.requests || []);
     } catch (err: any) {
       console.error('Failed to load activation requests:', err);
-      setRequestsError(err.message || 'Impossibile caricare le richieste di attivazione');
+      setRequestsError(err.message || t('licenses.requests.loadFailed'));
     } finally {
       setLoadingRequests(false);
     }
@@ -375,7 +377,7 @@ const LicensesPage: React.FC = () => {
       }
       
       await apiClient.post('/api/licenses/issue-license', payload);
-      setSuccess('Licenza creata con successo');
+      setSuccess(t('licenses.createdSuccess'));
       setCreateDialogOpen(false);
       // Reset form
       setNewLicense({
@@ -448,20 +450,20 @@ const LicensesPage: React.FC = () => {
         `/api/license-files/${licenseId}/download`,
         `${licenseId}.lic.json`
       );
-      setSuccess(`File licenza ${licenseId} scaricato`);
+      setSuccess(t('licenses.downloadedSuccess', { id: licenseId }));
     } catch (err: any) {
       setError(err.message);
     }
   };
 
   const handleDeleteLicense = async (licenseId: string) => {
-    if (!window.confirm(`Sei sicuro di voler eliminare definitivamente la licenza ${licenseId}? Questa operazione è irreversibile.`)) {
+    if (!window.confirm(t('licenses.confirmDelete', { id: licenseId }))) {
       return;
     }
     
     try {
       await apiClient.delete(`/api/licenses/${licenseId}`);
-      setSuccess(`Licenza ${licenseId} eliminata`);
+      setSuccess(t('licenses.deletedSuccess', { id: licenseId }));
       loadLicenses();
     } catch (err: any) {
       setError(err.message);
@@ -491,7 +493,7 @@ const LicensesPage: React.FC = () => {
     } catch (err: any) {
       setVerifyResult({
         valid: false,
-        message: err.message || 'Errore durante la verifica',
+        message: err.message || t('licenses.verify.errorGeneric'),
       });
     } finally {
       setVerifying(false);
@@ -507,7 +509,7 @@ const LicensesPage: React.FC = () => {
       try {
         payload = JSON.parse(content);
       } catch {
-        throw new Error('Il file non è un JSON valido');
+        throw new Error(t('licenses.requests.invalidJson'));
       }
       const result = await apiClient.post<ImportActivationRequestsResponse>(
         '/api/licenses/activation-requests/import',
@@ -516,7 +518,7 @@ const LicensesPage: React.FC = () => {
       setSuccess(result.message);
       await loadActivationRequests();
     } catch (err: any) {
-      setRequestsError(err.message || 'Importazione non riuscita');
+      setRequestsError(err.message || t('licenses.requests.importFailed'));
     } finally {
       setImportingRequest(false);
     }
@@ -563,7 +565,7 @@ const LicensesPage: React.FC = () => {
   };
 
   return (
-    <PramaLayout pageTitle="Gestione Licenze">
+    <PramaLayout pageTitle={t('licenses.pageTitle')}>
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
           {error}
@@ -577,9 +579,9 @@ const LicensesPage: React.FC = () => {
 
       {/* Tabs */}
       <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)} sx={{ mb: 3 }}>
-        <Tab label="Elenco Licenze" />
-        <Tab label="Verifica File" />
-        {isAdmin && <Tab label="Richieste Attivazione" />}
+        <Tab label={t('licenses.tabs.list')} />
+        <Tab label={t('licenses.tabs.verify')} />
+        {isAdmin && <Tab label={t('licenses.tabs.requests')} />}
       </Tabs>
 
       {/* Tab: License List */}
@@ -588,7 +590,7 @@ const LicensesPage: React.FC = () => {
           {/* Toolbar */}
           <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
             <TextField
-              placeholder="Cerca per ID, cliente, P.IVA..."
+              placeholder={t('licenses.toolbar.search')}
               size="small"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -603,18 +605,18 @@ const LicensesPage: React.FC = () => {
             />
             
             <FormControl size="small" sx={{ minWidth: 150 }}>
-              <InputLabel>Stato</InputLabel>
+              <InputLabel>{t('licenses.toolbar.statusLabel')}</InputLabel>
               <Select
                 value={statusFilter}
-                label="Stato"
+                label={t('licenses.toolbar.statusLabel')}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
-                <MenuItem value="">Tutti</MenuItem>
-                <MenuItem value="active">Attiva</MenuItem>
-                <MenuItem value="pending">In attesa</MenuItem>
-                <MenuItem value="expired">Scaduta</MenuItem>
-                <MenuItem value="revoked">Revocata</MenuItem>
-                <MenuItem value="suspended">Sospesa</MenuItem>
+                <MenuItem value="">{t('common.all')}</MenuItem>
+                <MenuItem value="active">{t('licenses.toolbar.statusActive')}</MenuItem>
+                <MenuItem value="pending">{t('licenses.toolbar.statusPending')}</MenuItem>
+                <MenuItem value="expired">{t('licenses.toolbar.statusExpired')}</MenuItem>
+                <MenuItem value="revoked">{t('licenses.toolbar.statusRevoked')}</MenuItem>
+                <MenuItem value="suspended">{t('licenses.toolbar.statusSuspended')}</MenuItem>
               </Select>
             </FormControl>
             
@@ -625,7 +627,7 @@ const LicensesPage: React.FC = () => {
               startIcon={<RefreshIcon />}
               onClick={() => loadLicenses()}
             >
-              Aggiorna
+              {t('common.refresh')}
             </Button>
             
             {isAdmin && (
@@ -634,7 +636,7 @@ const LicensesPage: React.FC = () => {
                 startIcon={<AddIcon />}
                 onClick={() => setCreateDialogOpen(true)}
               >
-                Nuova Licenza
+                {t('licenses.toolbar.newLicense')}
               </Button>
             )}
           </Box>
@@ -644,14 +646,14 @@ const LicensesPage: React.FC = () => {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>ID Licenza</TableCell>
-                  <TableCell>Cliente</TableCell>
-                  <TableCell>P.IVA/CF</TableCell>
-                  <TableCell>Moduli</TableCell>
-                  <TableCell>Utenti/Istanze</TableCell>
-                  <TableCell>Scadenza</TableCell>
-                  <TableCell>Stato</TableCell>
-                  <TableCell align="right">Azioni</TableCell>
+                  <TableCell>{t('licenses.table.licenseId')}</TableCell>
+                  <TableCell>{t('licenses.table.customer')}</TableCell>
+                  <TableCell>{t('licenses.table.vatOrCf')}</TableCell>
+                  <TableCell>{t('licenses.table.modules')}</TableCell>
+                  <TableCell>{t('licenses.table.usersInstances')}</TableCell>
+                  <TableCell>{t('licenses.table.expiry')}</TableCell>
+                  <TableCell>{t('licenses.table.status')}</TableCell>
+                  <TableCell align="right">{t('licenses.table.actions')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -664,7 +666,7 @@ const LicensesPage: React.FC = () => {
                 ) : licenses.length === 0 ? (
                   <TableRow>
                     <TableCell component="td" {...{ colSpan: 8 }} align="center" sx={{ py: 4 }}>
-                      <Typography color="text.secondary">Nessuna licenza trovata</Typography>
+                      <Typography color="text.secondary">{t('licenses.table.empty')}</Typography>
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -703,12 +705,12 @@ const LicensesPage: React.FC = () => {
                         />
                       </TableCell>
                       <TableCell align="right">
-                        <Tooltip title="Visualizza">
+                        <Tooltip title={t('licenses.table.view')}>
                           <IconButton size="small" onClick={() => handleViewLicense(license)}>
                             <VisibilityIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
-                        <Tooltip title="Scarica file firmato">
+                        <Tooltip title={t('licenses.table.downloadSigned')}>
                           <IconButton
                             size="small"
                             onClick={() => handleDownloadLicense(license.license_id)}
@@ -717,7 +719,7 @@ const LicensesPage: React.FC = () => {
                           </IconButton>
                         </Tooltip>
                         {isAdmin && (
-                          <Tooltip title="Elimina licenza">
+                          <Tooltip title={t('licenses.table.delete')}>
                             <IconButton
                               size="small"
                               color="error"
@@ -743,7 +745,7 @@ const LicensesPage: React.FC = () => {
                 setRowsPerPage(parseInt(e.target.value, 10));
                 setPage(0);
               }}
-              labelRowsPerPage="Righe per pagina:"
+              labelRowsPerPage={t('licenses.table.rowsPerPage')}
             />
           </TableContainer>
         </>
@@ -754,15 +756,15 @@ const LicensesPage: React.FC = () => {
         <Card sx={{ maxWidth: 600 }}>
           <CardContent>
             <Typography variant="h6" gutterBottom>
-              Verifica File Licenza
+              {t('licenses.verify.title')}
             </Typography>
             <Typography color="text.secondary" sx={{ mb: 3 }}>
-              Carica un file .lic.json per verificare l'autenticità della firma digitale.
+              {t('licenses.verify.subtitle')}
             </Typography>
             
             <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 3 }}>
               <Button variant="outlined" component="label">
-                Seleziona File
+                {t('licenses.verify.selectFile')}
                 <input
                   type="file"
                   hidden
@@ -786,7 +788,7 @@ const LicensesPage: React.FC = () => {
               disabled={!verifyFile || verifying}
               startIcon={verifying ? <CircularProgress size={16} /> : <VerifiedIcon />}
             >
-              Verifica Firma
+              {t('licenses.verify.verifyButton')}
             </Button>
             
             {verifyResult && (
@@ -796,19 +798,19 @@ const LicensesPage: React.FC = () => {
                 icon={verifyResult.valid ? <VerifiedIcon /> : <BlockIcon />}
               >
                 <Typography fontWeight={600}>
-                  {verifyResult.valid ? 'Firma Valida' : 'Firma Non Valida'}
+                  {verifyResult.valid ? t('licenses.verify.valid') : t('licenses.verify.invalid')}
                 </Typography>
                 <Typography variant="body2">{verifyResult.message}</Typography>
                 {verifyResult.valid && verifyResult.license_id && (
                   <Box sx={{ mt: 1 }}>
                     <Typography variant="body2">
-                      <strong>ID:</strong> {verifyResult.license_id}
+                      <strong>{t('licenses.verify.id')}</strong> {verifyResult.license_id}
                     </Typography>
                     <Typography variant="body2">
-                      <strong>Cliente:</strong> {verifyResult.customer_name}
+                      <strong>{t('licenses.verify.customer')}</strong> {verifyResult.customer_name}
                     </Typography>
                     <Typography variant="body2">
-                      <strong>Scadenza:</strong> {formatDate(verifyResult.expires_at)}
+                      <strong>{t('licenses.verify.expiry')}</strong> {formatDate(verifyResult.expires_at)}
                     </Typography>
                   </Box>
                 )}
@@ -824,9 +826,9 @@ const LicensesPage: React.FC = () => {
           <CardContent>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1, flexWrap: 'wrap', gap: 2 }}>
               <Box>
-                <Typography variant="h6">Richieste di Attivazione</Typography>
+                <Typography variant="h6">{t('licenses.requests.title')}</Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Importa il file generato dal Portal: crea una richiesta per ogni app, con il relativo catalogo moduli.
+                  {t('licenses.requests.subtitle')}
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', gap: 1 }}>
@@ -836,7 +838,7 @@ const LicensesPage: React.FC = () => {
                   disabled={importingRequest}
                   startIcon={importingRequest ? <CircularProgress size={16} /> : <AddIcon />}
                 >
-                  Importa Richiesta
+                  {t('licenses.requests.importButton')}
                   <input
                     type="file"
                     hidden
@@ -848,7 +850,7 @@ const LicensesPage: React.FC = () => {
                     }}
                   />
                 </Button>
-                <Tooltip title="Ricarica">
+                <Tooltip title={t('licenses.requests.reload')}>
                   <IconButton onClick={loadActivationRequests} disabled={loadingRequests}>
                     <RefreshIcon />
                   </IconButton>
@@ -866,13 +868,13 @@ const LicensesPage: React.FC = () => {
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell>Data</TableCell>
-                    <TableCell>Cliente</TableCell>
-                    <TableCell>App</TableCell>
-                    <TableCell>Moduli Richiesti</TableCell>
-                    <TableCell>Max Utenti</TableCell>
-                    <TableCell>Stato</TableCell>
-                    <TableCell align="right">Azioni</TableCell>
+                    <TableCell>{t('licenses.requests.table.date')}</TableCell>
+                    <TableCell>{t('licenses.requests.table.customer')}</TableCell>
+                    <TableCell>{t('licenses.requests.table.app')}</TableCell>
+                    <TableCell>{t('licenses.requests.table.requestedModules')}</TableCell>
+                    <TableCell>{t('licenses.requests.table.maxUsers')}</TableCell>
+                    <TableCell>{t('licenses.requests.table.status')}</TableCell>
+                    <TableCell align="right">{t('licenses.requests.table.actions')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -885,7 +887,7 @@ const LicensesPage: React.FC = () => {
                   ) : activationRequests.length === 0 ? (
                     <TableRow>
                       <TableCell component="td" {...{ colSpan: 7 }} align="center" sx={{ py: 4 }}>
-                        <Typography color="text.secondary">Nessuna richiesta di attivazione</Typography>
+                        <Typography color="text.secondary">{t('licenses.requests.table.empty')}</Typography>
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -900,7 +902,7 @@ const LicensesPage: React.FC = () => {
                         <TableCell>
                           {req.requested_modules && req.requested_modules.length > 0
                             ? req.requested_modules.join(', ')
-                            : <Typography variant="caption" color="text.secondary">Nessuno specificato</Typography>}
+                            : <Typography variant="caption" color="text.secondary">{t('licenses.requests.table.noneSpecified')}</Typography>}
                         </TableCell>
                         <TableCell>{req.requested_max_users ?? '-'}</TableCell>
                         <TableCell>
@@ -913,7 +915,7 @@ const LicensesPage: React.FC = () => {
                         <TableCell align="right">
                           {req.status === 'pending' && (
                             <Button size="small" onClick={() => handleUseActivationRequest(req)}>
-                              Usa per nuova licenza
+                              {t('licenses.requests.useForNewLicense')}
                             </Button>
                           )}
                         </TableCell>
@@ -929,18 +931,18 @@ const LicensesPage: React.FC = () => {
 
       {/* Create License Dialog */}
       <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Crea Nuova Licenza</DialogTitle>
+        <DialogTitle>{t('licenses.create.title')}</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
             {/* Customer Selection */}
             <Grid item xs={12}>
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>Cliente</Typography>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>{t('licenses.create.customerSection')}</Typography>
             </Grid>
             <Grid item xs={12} md={6}>
               <FormControl fullWidth size="small">
-                <InputLabel>Seleziona Cliente Esistente</InputLabel>
+                <InputLabel>{t('licenses.create.selectExistingCustomer')}</InputLabel>
                 <Select
-                  label="Seleziona Cliente Esistente"
+                  label={t('licenses.create.selectExistingCustomer')}
                   onChange={(e) => handleCustomerSelect(e.target.value as string)}
                 >
                   {customers.map((c) => (
@@ -953,12 +955,12 @@ const LicensesPage: React.FC = () => {
             </Grid>
             <Grid item xs={12} md={6}>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                Oppure inserisci manualmente:
+                {t('licenses.create.orEnterManually')}
               </Typography>
             </Grid>
             <Grid item xs={12} md={6}>
               <TextField
-                label="Nome Cliente"
+                label={t('licenses.create.customerName')}
                 fullWidth
                 size="small"
                 value={newLicense.customer_name}
@@ -968,7 +970,7 @@ const LicensesPage: React.FC = () => {
             </Grid>
             <Grid item xs={12} md={6}>
               <TextField
-                label="P.IVA / Codice Fiscale"
+                label={t('licenses.create.vatOrCf')}
                 fullWidth
                 size="small"
                 value={newLicense.customer_vat}
@@ -981,14 +983,14 @@ const LicensesPage: React.FC = () => {
             {!useMultiApp && (
               <>
                 <Grid item xs={12}>
-                  <Typography variant="subtitle2" sx={{ mb: 1, mt: 2 }}>Moduli e Limiti</Typography>
+                  <Typography variant="subtitle2" sx={{ mb: 1, mt: 2 }}>{t('licenses.create.modulesAndLimitsSection')}</Typography>
                 </Grid>
                 <Grid item xs={12}>
                   <FormControl fullWidth size="small">
-                    <InputLabel>Moduli Abilitati</InputLabel>
+                    <InputLabel>{t('licenses.create.enabledModules')}</InputLabel>
                     <Select
                       multiple
-                      label="Moduli Abilitati"
+                      label={t('licenses.create.enabledModules')}
                       value={newLicense.modules}
                       onChange={(e) => setNewLicense({ ...newLicense, modules: e.target.value as string[] })}
                       renderValue={(selected) => (
@@ -1007,7 +1009,7 @@ const LicensesPage: React.FC = () => {
                 </Grid>
                 <Grid item xs={6} md={3}>
                   <TextField
-                    label="Max Utenti"
+                    label={t('licenses.create.maxUsers')}
                     type="number"
                     fullWidth
                     size="small"
@@ -1018,7 +1020,7 @@ const LicensesPage: React.FC = () => {
                 </Grid>
                 <Grid item xs={6} md={3}>
                   <TextField
-                    label="Max Istanze"
+                    label={t('licenses.create.maxInstances')}
                     type="number"
                     fullWidth
                     size="small"
@@ -1032,37 +1034,37 @@ const LicensesPage: React.FC = () => {
             
             <Grid item xs={12} md={6}>
               <FormControl fullWidth size="small">
-                <InputLabel>Tipo Deployment</InputLabel>
+                <InputLabel>{t('licenses.create.deploymentType')}</InputLabel>
                 <Select
-                  label="Tipo Deployment"
+                  label={t('licenses.create.deploymentType')}
                   value={newLicense.deployment_type}
                   onChange={(e) => setNewLicense({ ...newLicense, deployment_type: e.target.value })}
                 >
-                  <MenuItem value="on_prem">On-Premise</MenuItem>
-                  <MenuItem value="cloud">Cloud</MenuItem>
-                  <MenuItem value="hybrid">Hybrid</MenuItem>
+                  <MenuItem value="on_prem">{t('licenses.create.deploymentOnPrem')}</MenuItem>
+                  <MenuItem value="cloud">{t('licenses.create.deploymentCloud')}</MenuItem>
+                  <MenuItem value="hybrid">{t('licenses.create.deploymentHybrid')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
             <Grid item xs={12} md={6}>
               <TextField
-                label="Fingerprint Ambiente"
+                label={t('licenses.create.fingerprint')}
                 fullWidth
                 size="small"
                 value={newLicense.fingerprint}
                 onChange={(e) => setNewLicense({ ...newLicense, fingerprint: e.target.value })}
-                placeholder="Hash fornito dal cliente (opzionale)"
-                helperText="Se specificato, la licenza sarà valida solo per questo ambiente"
+                placeholder={t('licenses.create.fingerprintPlaceholder')}
+                helperText={t('licenses.create.fingerprintHelper')}
               />
             </Grid>
             
             {/* Validity */}
             <Grid item xs={12}>
-              <Typography variant="subtitle2" sx={{ mb: 1, mt: 2 }}>Validità</Typography>
+              <Typography variant="subtitle2" sx={{ mb: 1, mt: 2 }}>{t('licenses.create.validitySection')}</Typography>
             </Grid>
             <Grid item xs={12} md={6}>
               <TextField
-                label="Data Scadenza"
+                label={t('licenses.create.expiresAt')}
                 type="date"
                 fullWidth
                 size="small"
@@ -1074,7 +1076,7 @@ const LicensesPage: React.FC = () => {
             </Grid>
             <Grid item xs={12} md={6}>
               <TextField
-                label="Fine Manutenzione"
+                label={t('licenses.create.maintenanceUntil')}
                 type="date"
                 fullWidth
                 size="small"
@@ -1096,9 +1098,9 @@ const LicensesPage: React.FC = () => {
                 }
                 label={
                   <Box>
-                    <Typography variant="subtitle2">Modalità Multi-App</Typography>
+                    <Typography variant="subtitle2">{t('licenses.create.multiAppToggleTitle')}</Typography>
                     <Typography variant="caption" color="text.secondary">
-                      Configura limiti separati per ciascuna applicazione e ruolo utente
+                      {t('licenses.create.multiAppToggleSubtitle')}
                     </Typography>
                   </Box>
                 }
@@ -1109,14 +1111,14 @@ const LicensesPage: React.FC = () => {
               <>
                 {/* Global Limits */}
                 <Grid item xs={12}>
-                  <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>Limiti Globali</Typography>
+                  <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>{t('licenses.create.globalLimitsSection')}</Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Usa -1 per illimitato
+                    {t('licenses.create.globalLimitsHelper')}
                   </Typography>
                 </Grid>
                 <Grid item xs={4}>
                   <TextField
-                    label="Tot. Utenti"
+                    label={t('licenses.create.totalUsers')}
                     type="number"
                     fullWidth
                     size="small"
@@ -1127,7 +1129,7 @@ const LicensesPage: React.FC = () => {
                 </Grid>
                 <Grid item xs={4}>
                   <TextField
-                    label="Tot. Istanze"
+                    label={t('licenses.create.totalInstances')}
                     type="number"
                     fullWidth
                     size="small"
@@ -1138,7 +1140,7 @@ const LicensesPage: React.FC = () => {
                 </Grid>
                 <Grid item xs={4}>
                   <TextField
-                    label="Tot. App"
+                    label={t('licenses.create.totalApps')}
                     type="number"
                     fullWidth
                     size="small"
@@ -1150,20 +1152,20 @@ const LicensesPage: React.FC = () => {
                 
                 {/* App Selection */}
                 <Grid item xs={12}>
-                  <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>Applicazioni</Typography>
+                  <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>{t('licenses.create.applicationsSection')}</Typography>
                   {appsError && (
                     <Alert
                       severity="warning"
                       sx={{ mb: 1 }}
-                      action={<Button color="inherit" size="small" onClick={loadAppsConfig}>Riprova</Button>}
+                      action={<Button color="inherit" size="small" onClick={loadAppsConfig}>{t('licenses.retry')}</Button>}
                     >
                       {appsError}
                     </Alert>
                   )}
                   <FormControl fullWidth size="small">
-                    <InputLabel>Aggiungi App</InputLabel>
+                    <InputLabel>{t('licenses.create.addApp')}</InputLabel>
                     <Select
-                      label="Aggiungi App"
+                      label={t('licenses.create.addApp')}
                       value=""
                       onChange={(e) => addAppEntitlement(e.target.value as string)}
                     >
@@ -1208,51 +1210,51 @@ const LicensesPage: React.FC = () => {
                                     size="small"
                                   />
                                 }
-                                label="Abilitata"
+                                label={t('licenses.create.appEnabled')}
                               />
                             </Grid>
                             <Grid item xs={12}>
-                              <Typography variant="caption" fontWeight={600}>Limiti Utenti per Ruolo</Typography>
+                              <Typography variant="caption" fontWeight={600}>{t('licenses.create.userLimitsPerRole')}</Typography>
                             </Grid>
                             <Grid item xs={4}>
                               <TextField
-                                label="Admin"
+                                label={t('licenses.create.roleAdmin')}
                                 type="number"
                                 fullWidth
                                 size="small"
                                 value={ent.users.admin}
                                 onChange={(e) => updateAppUserLimit(appId, 'admin', parseInt(e.target.value) || 0)}
                                 inputProps={{ min: -1 }}
-                                helperText="-1 = illim."
+                                helperText={t('licenses.create.unlimitedHelper')}
                               />
                             </Grid>
                             <Grid item xs={4}>
                               <TextField
-                                label="Standard"
+                                label={t('licenses.create.roleStandard')}
                                 type="number"
                                 fullWidth
                                 size="small"
                                 value={ent.users.standard}
                                 onChange={(e) => updateAppUserLimit(appId, 'standard', parseInt(e.target.value) || 0)}
                                 inputProps={{ min: -1 }}
-                                helperText="-1 = illim."
+                                helperText={t('licenses.create.unlimitedHelper')}
                               />
                             </Grid>
                             <Grid item xs={4}>
                               <TextField
-                                label="Viewer"
+                                label={t('licenses.create.roleViewer')}
                                 type="number"
                                 fullWidth
                                 size="small"
                                 value={ent.users.viewer}
                                 onChange={(e) => updateAppUserLimit(appId, 'viewer', parseInt(e.target.value) || 0)}
                                 inputProps={{ min: -1 }}
-                                helperText="-1 = illim."
+                                helperText={t('licenses.create.unlimitedHelper')}
                               />
                             </Grid>
                             <Grid item xs={6}>
                               <TextField
-                                label="Max Istanze"
+                                label={t('licenses.create.maxInstances')}
                                 type="number"
                                 fullWidth
                                 size="small"
@@ -1263,10 +1265,10 @@ const LicensesPage: React.FC = () => {
                             </Grid>
                             <Grid item xs={6}>
                               <FormControl fullWidth size="small">
-                                <InputLabel>Moduli</InputLabel>
+                                <InputLabel>{t('licenses.create.appModules')}</InputLabel>
                                 <Select
                                   multiple
-                                  label="Moduli"
+                                  label={t('licenses.create.appModules')}
                                   value={ent.modules}
                                   onChange={(e) => updateAppEntitlement(appId, 'modules', e.target.value as string[])}
                                   renderValue={(selected) => (selected as string[]).join(', ')}
@@ -1288,13 +1290,13 @@ const LicensesPage: React.FC = () => {
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setCreateDialogOpen(false)}>Annulla</Button>
+          <Button onClick={() => setCreateDialogOpen(false)}>{t('common.cancel')}</Button>
           <Button
             variant="contained"
             onClick={handleCreateLicense}
             disabled={!newLicense.customer_name || !newLicense.customer_vat || !newLicense.expires_at}
           >
-            Crea Licenza
+            {t('licenses.create.createButton')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1302,7 +1304,7 @@ const LicensesPage: React.FC = () => {
       {/* View License Dialog */}
       <Dialog open={viewDialogOpen} onClose={() => setViewDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>
-          Dettagli Licenza
+          {t('licenses.view.title')}
           <Chip
             label={selectedLicense?.status}
             size="small"
@@ -1317,7 +1319,7 @@ const LicensesPage: React.FC = () => {
                 {selectedLicense.license_id}
               </Typography>
               
-              <Typography variant="subtitle2" color="text.secondary">Cliente</Typography>
+              <Typography variant="subtitle2" color="text.secondary">{t('licenses.view.customer')}</Typography>
               <Typography sx={{ mb: 2 }}>
                 {selectedLicense.customer.name}<br />
                 <Typography component="span" variant="body2" color="text.secondary">
@@ -1325,32 +1327,34 @@ const LicensesPage: React.FC = () => {
                 </Typography>
               </Typography>
               
-              <Typography variant="subtitle2" color="text.secondary">Moduli</Typography>
+              <Typography variant="subtitle2" color="text.secondary">{t('licenses.view.modules')}</Typography>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 2 }}>
                 {selectedLicense.entitlements.modules.map((m) => (
                   <Chip key={m} label={m} size="small" />
                 ))}
               </Box>
               
-              <Typography variant="subtitle2" color="text.secondary">Limiti</Typography>
+              <Typography variant="subtitle2" color="text.secondary">{t('licenses.view.limits')}</Typography>
               <Typography sx={{ mb: 2 }}>
-                Max Utenti: {selectedLicense.entitlements.max_users} | 
-                Max Istanze: {selectedLicense.entitlements.max_instances}
+                {t('licenses.view.maxUsersInstances', {
+                  users: selectedLicense.entitlements.max_users,
+                  instances: selectedLicense.entitlements.max_instances,
+                })}
               </Typography>
               
-              <Typography variant="subtitle2" color="text.secondary">Deployment</Typography>
+              <Typography variant="subtitle2" color="text.secondary">{t('licenses.view.deployment')}</Typography>
               <Typography sx={{ mb: 2 }}>
                 {selectedLicense.environment.deployment_type}
                 {selectedLicense.environment.fingerprint && (
-                  <><br />Fingerprint: {selectedLicense.environment.fingerprint}</>
+                  <><br />{t('licenses.view.fingerprint', { fingerprint: selectedLicense.environment.fingerprint })}</>
                 )}
               </Typography>
               
-              <Typography variant="subtitle2" color="text.secondary">Validità</Typography>
+              <Typography variant="subtitle2" color="text.secondary">{t('licenses.view.validity')}</Typography>
               <Typography>
-                Emessa: {formatDate(selectedLicense.validity.issued_at)}<br />
-                Scadenza: {formatDate(selectedLicense.validity.expires_at)}<br />
-                Manutenzione fino a: {formatDate(selectedLicense.validity.maintenance_until)}
+                {t('licenses.view.issued', { date: formatDate(selectedLicense.validity.issued_at) })}<br />
+                {t('licenses.view.expires', { date: formatDate(selectedLicense.validity.expires_at) })}<br />
+                {t('licenses.view.maintenanceUntil', { date: formatDate(selectedLicense.validity.maintenance_until) })}
               </Typography>
               
               {/* Multi-App Entitlements */}
@@ -1358,7 +1362,7 @@ const LicensesPage: React.FC = () => {
                 <>
                   <Divider sx={{ my: 2 }} />
                   <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                    Entitlement Multi-App
+                    {t('licenses.view.multiAppEntitlements')}
                   </Typography>
                   {Object.entries(selectedLicense.apps_entitlements).map(([appId, ent]: [string, AppEntitlement]) => {
                     const appInfo = availableApps.find(a => a.id === appId);
@@ -1366,16 +1370,21 @@ const LicensesPage: React.FC = () => {
                       <Box key={appId} sx={{ mb: 2, p: 1.5, bgcolor: 'grey.50', borderRadius: 1 }}>
                         <Typography variant="body2" fontWeight={600}>
                           {appInfo?.name || appId}
-                          {!ent.enabled && <Chip label="Disabilitata" size="small" color="warning" sx={{ ml: 1 }} />}
+                          {!ent.enabled && <Chip label={t('licenses.view.disabled')} size="small" color="warning" sx={{ ml: 1 }} />}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          Utenti: Admin {ent.users.admin === -1 ? '∞' : ent.users.admin} | 
-                          Standard {ent.users.standard === -1 ? '∞' : ent.users.standard} | 
-                          Viewer {ent.users.viewer === -1 ? '∞' : ent.users.viewer}
+                          {t('licenses.view.appUsers', {
+                            admin: ent.users.admin === -1 ? '∞' : ent.users.admin,
+                            standard: ent.users.standard === -1 ? '∞' : ent.users.standard,
+                            viewer: ent.users.viewer === -1 ? '∞' : ent.users.viewer,
+                          })}
                         </Typography>
                         <br />
                         <Typography variant="caption" color="text.secondary">
-                          Istanze: {ent.max_instances} | Moduli: {ent.modules?.join(', ') || 'tutti'}
+                          {t('licenses.view.appInstancesModules', {
+                            instances: ent.max_instances,
+                            modules: ent.modules?.join(', ') || t('licenses.view.allModules'),
+                          })}
                         </Typography>
                       </Box>
                     );
@@ -1385,11 +1394,13 @@ const LicensesPage: React.FC = () => {
               
               {selectedLicense.global_limits && (
                 <>
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 2 }}>Limiti Globali</Typography>
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 2 }}>{t('licenses.view.globalLimitsSection')}</Typography>
                   <Typography variant="body2">
-                    Tot. Utenti: {selectedLicense.global_limits.total_users === -1 ? '∞' : selectedLicense.global_limits.total_users} | 
-                    Tot. Istanze: {selectedLicense.global_limits.total_instances === -1 ? '∞' : selectedLicense.global_limits.total_instances} | 
-                    Tot. App: {selectedLicense.global_limits.total_apps === -1 ? '∞' : selectedLicense.global_limits.total_apps}
+                    {t('licenses.view.globalLimitsLine', {
+                      users: selectedLicense.global_limits.total_users === -1 ? '∞' : selectedLicense.global_limits.total_users,
+                      instances: selectedLicense.global_limits.total_instances === -1 ? '∞' : selectedLicense.global_limits.total_instances,
+                      apps: selectedLicense.global_limits.total_apps === -1 ? '∞' : selectedLicense.global_limits.total_apps,
+                    })}
                   </Typography>
                 </>
               )}
@@ -1403,9 +1414,9 @@ const LicensesPage: React.FC = () => {
               if (selectedLicense) handleDownloadLicense(selectedLicense.license_id);
             }}
           >
-            Scarica File Firmato
+            {t('licenses.view.downloadSigned')}
           </Button>
-          <Button onClick={() => setViewDialogOpen(false)}>Chiudi</Button>
+          <Button onClick={() => setViewDialogOpen(false)}>{t('common.close')}</Button>
         </DialogActions>
       </Dialog>
     </PramaLayout>
