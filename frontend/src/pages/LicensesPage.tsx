@@ -110,6 +110,7 @@ interface VerifyResponse {
 interface ActivationRequestModuleCatalogEntry {
   code: string;
   name?: Record<string, string>;
+  description?: Record<string, string>;
   [key: string]: any;
 }
 
@@ -175,8 +176,16 @@ interface AppsConfigResponse {
   source: string;
 }
 
+// Record localizzato (es. {"it": "...", "en": "..."}): sceglie la lingua corrente, altrimenti
+// l'italiano, altrimenti la prima disponibile. Il catalogo moduli arriva dalla richiesta importata
+// (vedi C:/PramaIA-HelpDesk/docs/LICENZE_MODULI_STANDARD.md §2.1) e non garantisce tutte le lingue.
+function pickLocalized(record: Record<string, string> | undefined, lang: string): string | undefined {
+  if (!record) return undefined;
+  return record[lang] || record.it || Object.values(record)[0];
+}
+
 const LicensesPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const user = authGuard.getCurrentUser();
   const isAdmin = user?.is_admin;
   
@@ -231,6 +240,9 @@ const LicensesPage: React.FC = () => {
   // Apps config (loaded from backend)
   const [availableApps, setAvailableApps] = useState<AppConfig[]>([]);
   const [modulesOptions, setModulesOptions] = useState<string[]>([]);
+  // Nome e descrizione dei moduli, dal catalogo della richiesta importata (se disponibile):
+  // mostrati accanto al codice nel menu "Moduli", così l'operatore non sceglie sul solo codice.
+  const [moduleCatalogInfo, setModuleCatalogInfo] = useState<Record<string, ActivationRequestModuleCatalogEntry>>({});
   const [appsLoading, setAppsLoading] = useState(true);
   const [appsError, setAppsError] = useState<string | null>(null);
 
@@ -531,6 +543,11 @@ const LicensesPage: React.FC = () => {
     const catalogCodes = (req.modules_catalog || []).map((m) => m.code);
     if (catalogCodes.length > 0) {
       setModulesOptions((prev) => Array.from(new Set([...prev, ...catalogCodes])).sort());
+      setModuleCatalogInfo((prev) => {
+        const updated = { ...prev };
+        (req.modules_catalog || []).forEach((entry) => { updated[entry.code] = entry; });
+        return updated;
+      });
     }
     const preselected = (req.requested_modules || []).filter(
       (m) => catalogCodes.length === 0 || catalogCodes.includes(m)
@@ -562,6 +579,27 @@ const LicensesPage: React.FC = () => {
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return '-';
     return new Date(dateStr).toLocaleDateString('it-IT');
+  };
+
+  // Voce del menu "Moduli": codice + nome/descrizione dal catalogo, se noti (richiesta importata).
+  // Senza catalogo (es. moduli da /api/config/apps) resta il solo codice, come prima.
+  const renderModuleOption = (code: string) => {
+    const entry = moduleCatalogInfo[code];
+    const name = pickLocalized(entry?.name, i18n.language);
+    const description = pickLocalized(entry?.description, i18n.language);
+    if (!name && !description) return code;
+    return (
+      <Box>
+        <Typography variant="body2" component="span">
+          <strong>{code}</strong>{name ? ` — ${name}` : ''}
+        </Typography>
+        {description && (
+          <Typography variant="caption" color="text.secondary" display="block">
+            {description}
+          </Typography>
+        )}
+      </Box>
+    );
   };
 
   return (
@@ -1002,7 +1040,7 @@ const LicensesPage: React.FC = () => {
                       )}
                     >
                       {modulesOptions.map((mod) => (
-                        <MenuItem key={mod} value={mod}>{mod}</MenuItem>
+                        <MenuItem key={mod} value={mod}>{renderModuleOption(mod)}</MenuItem>
                       ))}
                     </Select>
                   </FormControl>
@@ -1274,7 +1312,7 @@ const LicensesPage: React.FC = () => {
                                   renderValue={(selected) => (selected as string[]).join(', ')}
                                 >
                                   {modulesOptions.map((mod) => (
-                                    <MenuItem key={mod} value={mod}>{mod}</MenuItem>
+                                    <MenuItem key={mod} value={mod}>{renderModuleOption(mod)}</MenuItem>
                                   ))}
                                 </Select>
                               </FormControl>
